@@ -8,7 +8,7 @@ const cfg={
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
   galleryAdminRoleId:"1399465429516161024",
-  tokenExchangeUrl:"https://soft-glade-957c.darqsideee.workers.dev/", // TODO: set to your deployed Worker URL
+  tokenExchangeUrl:"https://soft-glade-957c.darqsideee.workers.dev/", // Cloudflare Worker endpoint
   api:"https://discord.com/api"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
@@ -359,7 +359,7 @@ function clearHash(){history.replaceState(null,document.title,location.pathname+
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
 function authUrl(){
-  const u=new URL("https://discord.com/oauth2/authorize");
+  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=guilds+identify+guilds.members.read");
   u.searchParams.set("client_id",cfg.discordClientId);
   u.searchParams.set("redirect_uri",cfg.redirectUri);
   u.searchParams.set("response_type","code");
