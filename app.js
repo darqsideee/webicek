@@ -359,7 +359,7 @@ function clearHash(){history.replaceState(null,document.title,location.pathname+
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
 function authUrl(){
-  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=guilds+identify+guilds.members.read");
+  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=guilds+identify+guilds.members.read);
   u.searchParams.set("client_id",cfg.discordClientId);
   u.searchParams.set("redirect_uri",cfg.redirectUri);
   u.searchParams.set("response_type","code");
@@ -446,12 +446,28 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   }
   // Handle implicit flow tokens (legacy) if present
   if(location.hash.includes('access_token')){const h=parseHash(location.hash);if(h.access_token){setToken(h.access_token);clearHash()}}
-  // Handle authorization code (no backend in static hosting)
-  const urlParams=new URLSearchParams(location.search);
-  if(urlParams.get('code')){
-    const code=urlParams.get('code');
+  // Handle authorization code (supports both query and hash)
+  let codeFromQuery = new URLSearchParams(location.search).get('code');
+  let code = codeFromQuery;
+  if(!code){
+    const h=parseHash(location.hash);
+    if(h.code){ code=h.code; }
+  }
+  if(code){
     const exchanged=await tryExchangeCode(code);
-    try{ const url=new URL(location.href); url.searchParams.delete('code'); url.searchParams.delete('state'); history.replaceState(null,document.title,url.toString()); }catch{}
+    // Clean code from URL (both query and hash)
+    try{
+      const url=new URL(location.href);
+      url.searchParams.delete('code'); url.searchParams.delete('state');
+      // strip code/state from hash if present
+      if(location.hash){
+        const h=parseHash(location.hash);
+        delete h.code; delete h.state;
+        const rebuilt = Object.keys(h).length? ('#'+Object.entries(h).map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')) : '';
+        url.hash = rebuilt || url.hash.split('?')[0];
+      }
+      history.replaceState(null,document.title,url.toString());
+    }catch{}
     if(!exchanged){
       alertShow('Authorization code received but token exchange failed. Configure cfg.tokenExchangeUrl to your backend.');
       return;
