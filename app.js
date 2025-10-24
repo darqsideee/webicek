@@ -1,6 +1,6 @@
 const cfg={
   discordClientId:"1431308039927107719",
-  redirectUri:"https://darqsideee.github.io/webicek/#home",
+  redirectUri:"https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=identify+guilds",
   scopes:["identify","guilds","guilds.members.read"],
   discordInvite:"https://discord.gg/rSHWAYWzP4",
   guildId:"1330612477578313789", // Target guild for members/admin checks
