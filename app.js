@@ -7,6 +7,7 @@ const cfg={
   adminRoleId:"1399465075722551376",
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
+  galleryAdminRoleId:"1399465429516161024",
   api:"https://discord.com/api"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
@@ -42,6 +43,7 @@ const S={
   statFirstJoined:qs('#stat-first-joined'),
   statLastJoined:qs('#stat-last-joined'),
   year:qs("#year"),
+  homePromoted:qs('#home-promoted'),
   // Gallery
   galleryGuard:qs('#gallery-guard'),
   galleryForm:qs('#gallery-form'),
@@ -65,7 +67,7 @@ const HP={pill:qs('#user-pill'),pillImg:qs('#pill-avatar'),pillName:qs('#pill-na
 const Alert={box:qs('#alert'),text:qs('#alert-text')};
 function px(v){return Math.max(0,Math.min(1,v))}
 // simple app state
-const STATE={current:null,isStaff:false,canSeeLogs:false};
+const STATE={current:null,isStaff:false,isGalleryAdmin:false,canSeeLogs:false};
 
 // Tickets selectors
 const T={
@@ -81,6 +83,7 @@ const A={
   timer:qs('#admin-timer'), solved:qs('#admin-solved'),
   list:qs('#admin-tickets'), logs:qs('#admin-logs'), logsList:qs('#logs-list'),
   closedPanel:qs('#admin-closed'), closedList:qs('#admin-closed-list'),
+  galAllow:qs('#admin-gal-allow'), galList:qs('#admin-gal-list'),
   dUser:qs('#ad-discord-user'), dReason:qs('#ad-discord-reason'), dKick:qs('#ad-discord-kick'), dBan:qs('#ad-discord-ban'),
   fId:qs('#ad-fivem-id'), fReason:qs('#ad-fivem-reason'), fKick:qs('#ad-fivem-kick'), fBan:qs('#ad-fivem-ban'), fAnn:qs('#ad-fivem-announce')
 };
@@ -233,18 +236,30 @@ function renderGallery(){
   if(!S.galleryList) return;
   S.galleryList.innerHTML='';
   items.slice().reverse().forEach(it=>{
+    // visibility: approved for all, pending only for uploader or gallery admin
+    const isMine = !!STATE.current && (STATE.current.id===it.uploaderId);
+    const canSee = it.approved || isMine || STATE.isGalleryAdmin;
+    if(!canSee) return;
     const card=document.createElement('div');card.className='card';
     const img=document.createElement('img');img.src=it.image;img.alt='';img.style.width='100%';img.style.borderRadius='10px';
     img.style.cursor='zoom-in';
     img.addEventListener('click',()=>openLightbox(it.image,it.caption||''));
     const cap=document.createElement('div');cap.className='card-text';cap.textContent=it.caption||'';
     const meta=document.createElement('div');meta.className='muted';meta.style.marginTop='6px';meta.textContent=`by ${it.user}`;
+    if(!it.approved){
+      const badge=document.createElement('div'); badge.className='pending-badge'; badge.textContent='Waiting for staff approval'; card.appendChild(badge);
+    }
     // delete if owner or staff
-    const canDel = (STATE.current && (STATE.current.id===it.uploaderId)) || STATE.isStaff;
+    const canDel = (STATE.current && (STATE.current.id===it.uploaderId)) || STATE.isGalleryAdmin;
     if(canDel){
       const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Delete'; del.style.marginTop='6px';
       del.addEventListener('click',()=>{ deleteGallery(it.id); });
       card.appendChild(del);
+    }
+    if(STATE.isGalleryAdmin && it.approved){
+      const promo=document.createElement('button'); promo.className='btn btn-outline'; promo.textContent= it.promoted? 'Unpromote' : 'Promote to Home'; promo.style.marginLeft='8px';
+      promo.addEventListener('click',()=>{ togglePromoteGallery(it.id); });
+      card.appendChild(promo);
     }
     card.appendChild(img);card.appendChild(cap);card.appendChild(meta);
     S.galleryList.appendChild(card);
@@ -253,11 +268,47 @@ function renderGallery(){
 function addGallery(image,caption,user){
   const items=store.get('ns_gallery',[]);
   const id=`g_${Date.now()}`;
-  items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,ts:Date.now()});
+  const uploaderAvatar = HP.pillImg?.src||'';
+  items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar,approved:false,promoted:false,ts:Date.now()});
   store.set('ns_gallery',items);
   renderGallery();
+  renderAdminGalleryPending();
 }
 function deleteGallery(id){ const items=store.get('ns_gallery',[]).filter(x=>x.id!==id); store.set('ns_gallery',items); renderGallery(); }
+function approveGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.approved=true;} store.set('ns_gallery',items); renderGallery(); renderAdminGalleryPending(); }
+function togglePromoteGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.promoted=!it.promoted;} store.set('ns_gallery',items); renderGallery(); renderHomePromoted(); }
+
+function renderAdminGalleryPending(){
+  if(!A.galList) return;
+  const items=store.get('ns_gallery',[]).filter(x=>!x.approved).sort((a,b)=>b.ts-a.ts);
+  if(items.length===0){ A.galList.textContent='No pending images.'; return; }
+  A.galList.textContent='';
+  items.forEach(it=>{
+    const row=document.createElement('div'); row.className='guild';
+    const img=document.createElement('img'); img.src=it.image; img.alt=''; img.style.width='46px'; img.style.height='46px'; img.style.borderRadius='8px';
+    const meta=document.createElement('div'); meta.innerHTML=`<div class="g-name">${it.caption||'Untitled'}</div><div class="g-id">by ${it.user}</div>`;
+    const allow=document.createElement('button'); allow.className='btn btn-primary'; allow.textContent='Allow'; allow.addEventListener('click',()=>approveGallery(it.id));
+    const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Delete'; del.style.marginLeft='8px'; del.addEventListener('click',()=>{ deleteGallery(it.id); renderAdminGalleryPending(); });
+    row.appendChild(img); row.appendChild(meta); row.appendChild(allow); row.appendChild(del);
+    A.galList.appendChild(row);
+  });
+}
+
+function renderHomePromoted(){
+  if(!S.homePromoted) return;
+  const items=store.get('ns_gallery',[]).filter(x=>x.approved && x.promoted).sort((a,b)=>b.ts-a.ts).slice(0,3);
+  S.homePromoted.textContent='';
+  items.forEach(it=>{
+    const card=document.createElement('div'); card.className='promoted-card';
+    const img=document.createElement('img'); img.src=it.image; img.alt='';
+    const pub=document.createElement('div'); pub.className='promoted-pub';
+    const ava=document.createElement('img'); ava.src=it.uploaderAvatar||`https://cdn.discordapp.com/embed/avatars/0.png`; ava.alt='';
+    const name=document.createElement('span'); name.textContent=it.user;
+    pub.appendChild(ava); pub.appendChild(name);
+    card.appendChild(img); card.appendChild(pub);
+    S.homePromoted.appendChild(card);
+  });
+}
 
 function parseNewsBody(src){
   const lines=src.split(/\r?\n/);
@@ -408,10 +459,11 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     S.btnOpenAdmin?.addEventListener('click',()=>{ location.hash='#admin'; startAdminTimer(); });
     // Admin page gate
     if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
-    // Logs visibility and closed history panel by roles
+    // Logs visibility and role-gated panels
     try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
       if(roles.includes(cfg.logsRoleId)){ A.logs?.classList.remove('hidden'); STATE.canSeeLogs=true; }
       if(roles.includes(cfg.closedHistoryRoleId)){ A.closedPanel?.classList.remove('hidden'); renderClosedTickets(); }
+      if(roles.includes(cfg.galleryAdminRoleId)){ STATE.isGalleryAdmin=true; A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); }
     }catch{}
   } else {
     if(A.guard && A.wrap){ A.guard.classList.remove('hidden'); A.wrap.classList.add('hidden'); }
@@ -429,6 +481,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   if(S.galleryForm) S.galleryForm.classList.remove('hidden');
   renderGallery();
   renderNews(STATE.newsPage||1);
+  renderHomePromoted();
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCancel?.addEventListener('click',()=>showTicketModal(false));
