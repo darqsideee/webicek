@@ -8,6 +8,7 @@ const cfg={
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
   galleryAdminRoleId:"1399465429516161024",
+  ticketOpenRoleId:"1410635979340910694",
   tokenExchangeUrl:"https://pepa.darqsideee.workers.dev/", // Cloudflare Worker endpoint
   api:"https://discord.com/api"
 };
@@ -68,7 +69,13 @@ const HP={pill:qs('#user-pill'),pillImg:qs('#pill-avatar'),pillName:qs('#pill-na
 const Alert={box:qs('#alert'),text:qs('#alert-text')};
 function px(v){return Math.max(0,Math.min(1,v))}
 // simple app state
-const STATE={current:null,isStaff:false,isGalleryAdmin:false,canSeeLogs:false};
+const STATE={
+  current:null,
+  isStaff:false,
+  isGalleryAdmin:false,
+  canOpenTickets:false,
+  newsPage:1
+};
 
 // Tickets selectors
 const T={
@@ -330,7 +337,7 @@ function renderNews(page=1){
     if(n.image){const img=document.createElement('img');img.src=n.image;img.alt='';card.appendChild(img)}
     const head=document.createElement('h3');head.textContent=n.head;card.appendChild(head);
     const body=document.createElement('div');body.className='news-body';body.innerHTML=parseNewsBody(n.body);card.appendChild(body);
-    const meta=document.createElement('div');meta.className='muted';meta.textContent=`od ${n.user}`;card.appendChild(meta);
+    const meta=document.createElement('div');meta.className='muted';meta.textContent=`od ${n.user} • ${new Date(n.ts).toLocaleString()}`;card.appendChild(meta);
     if(STATE.isStaff){
       const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat novinku'; del.style.marginTop='8px';
       del.addEventListener('click',()=>deleteNews(n.ts));
@@ -362,7 +369,7 @@ function clearHash(){history.replaceState(null,document.title,location.pathname+
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){ if(t){ localStorage.setItem("ns_token",t); } else { localStorage.removeItem("ns_token"); } }
 function authUrl(){
-  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F&scope=guilds+identify");
+  const u=new URL("https://discord.com/oauth2/authorize");
   u.searchParams.set("client_id", cfg.discordClientId);
   u.searchParams.set("redirect_uri", cfg.redirectUri);
   u.searchParams.set("response_type", "code");
@@ -487,6 +494,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     renderGallery();
     renderNews();
     renderHomeNews();
+    startPlayerAutoRefresh(true);
     // Tickets for logged-out cannot create
     return;
   }
@@ -522,9 +530,12 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
       if(roles.includes(cfg.logsRoleId)){ A.logs?.classList.remove('hidden'); STATE.canSeeLogs=true; }
       if(roles.includes(cfg.closedHistoryRoleId)){ A.closedPanel?.classList.remove('hidden'); renderClosedTickets(); }
       if(roles.includes(cfg.galleryAdminRoleId)){ STATE.isGalleryAdmin=true; A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); }
+      STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId);
     }catch{}
   } else {
     if(A.guard && A.wrap){ A.guard.classList.remove('hidden'); A.wrap.classList.add('hidden'); }
+    // Even if not staff, still check ticket open role to enable open button
+    try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[]; STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId); }catch{}
   }
   showDashboard(true);
  }catch(e){
@@ -541,6 +552,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   renderNews(STATE.newsPage||1);
   renderHomePromoted();
   renderHomeNews();
+  applyTicketGate();
+  startPlayerAutoRefresh(true);
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCancel?.addEventListener('click',()=>showTicketModal(false));
@@ -624,5 +637,21 @@ function renderHomeNews(){
   host.className='news-card';
   if(n.image){ const img=document.createElement('img'); img.src=n.image; img.alt=''; host.appendChild(img); }
   const head=document.createElement('h2'); head.textContent=n.head; host.appendChild(head);
+  const meta=document.createElement('div'); meta.className='muted'; meta.textContent = new Date(n.ts).toLocaleString(); host.appendChild(meta);
   const body=document.createElement('div'); body.className='news-body'; body.innerHTML=parseNewsBody(n.body); host.appendChild(body);
+}
+
+// Ticket gate by role
+function applyTicketGate(){
+  const btn=qs('#btn-open-ticket');
+  if(!btn) return;
+  if(STATE.canOpenTickets){ btn.disabled=false; btn.classList.remove('disabled'); }
+  else { btn.disabled=true; btn.classList.add('disabled'); }
+}
+
+// Auto refresh every 5s for non-staff (and logged-out)
+let REFRESH_TIMER=null;
+function startPlayerAutoRefresh(enable){
+  if(REFRESH_TIMER){ clearInterval(REFRESH_TIMER); REFRESH_TIMER=null; }
+  if(enable){ REFRESH_TIMER=setInterval(()=>{ location.reload(); },5000); }
 }
