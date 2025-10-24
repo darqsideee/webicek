@@ -8,7 +8,7 @@ const cfg={
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
   galleryAdminRoleId:"1399465429516161024",
-  tokenExchangeUrl:"https://soft-glade-957c.darqsideee.workers.dev/", // Cloudflare Worker endpoint
+  tokenExchangeUrl:"https://asa-16w9qfk44-darqsideees-projects.vercel.app", // Cloudflare Worker endpoint
   api:"https://discord.com/api"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
