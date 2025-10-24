@@ -386,7 +386,14 @@ async function tryExchangeCode(code){
 }
 function setDiscordLinks(){const invite=cfg.discordInvite||"https://discord.com";if(S.heroDiscord) S.heroDiscord.href=invite}
 function setLoginLinks(){const u=authUrl();if(S.heroLogin) S.heroLogin.href=u; if(S.loginBtn) S.loginBtn.href=u}
-function showDashboard(v){S.dashboard.hidden=!v;S.logoutBtn.hidden=!v; if(S.loginBtn) S.loginBtn.hidden=!!v}
+function showDashboard(v){
+  S.dashboard.hidden=!v;
+  S.logoutBtn.hidden=!v;
+  // Hide hero login when logged in
+  if(S.heroLogin) S.heroLogin.classList.toggle('hidden', !!v);
+  // If there was a header login button in older markup, hide it as well
+  if(S.loginBtn) S.loginBtn.hidden=!!v;
+}
 function show(el){el?.classList.remove('hidden')}
 function hide(el){el?.classList.add('hidden')}
 function setHeaderLoggedIn(me){
