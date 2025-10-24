@@ -61,6 +61,13 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 .rules ol{margin:0 0 10px 18px}
 .rules li{margin:6px 0}
 .tabs{display:flex;gap:8px;margin-bottom:10px}
+
+/* Hover animations */
+@keyframes hoverGlow { 0%{ text-shadow:0 0 6px rgba(124,58,237,.3) } 50%{ text-shadow:0 0 16px rgba(167,139,250,.9) } 100%{ text-shadow:0 0 6px rgba(124,58,237,.3) } }
+.title:hover, .subtitle:hover, .card-title:hover, .links .link:hover, .section-title:hover {
+  animation:hoverGlow 1.6s ease-in-out infinite;
+}
+.links .link:hover { color:var(--accent-2) }
 .tab{background:transparent;border:1px solid rgba(124,58,237,.35);color:var(--text);padding:8px 12px;border-radius:999px;cursor:pointer}
 .tab.active{background:rgba(124,58,237,.2)}
 .tab-panels .tab-panel{display:none}
