@@ -1,6 +1,7 @@
 const cfg={
   discordClientId:"1431308039927107719",
   redirectUri:"https://darqsideee.github.io/webicek/",
+  scopes:["identify","guilds","guilds.members.read"],
   discordInvite:"https://discord.gg/rSHWAYWzP4",
   guildId:"1330612477578313789", // Target guild for members/admin checks
   adminRoleId:"1399465075722551376",
@@ -365,7 +366,8 @@ function authUrl(){
   u.searchParams.set("client_id", cfg.discordClientId);
   u.searchParams.set("redirect_uri", cfg.redirectUri);
   u.searchParams.set("response_type", "code");
-  // scopes removed per request; Discord may default to basic scopes configured in the application
+  const scopes = Array.isArray(cfg.scopes) && cfg.scopes.length ? cfg.scopes : ["identify","guilds","guilds.members.read"];
+  u.searchParams.set("scope", scopes.join(" "));
   return u.toString();
 }
 async function apiGet(path){const t=token();if(!t)throw new Error("no_token");const r=await fetch(`${cfg.api}${path}`,{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error("api_error");return r.json()}
