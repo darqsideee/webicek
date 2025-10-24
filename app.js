@@ -363,8 +363,8 @@ function authUrl(){
   u.searchParams.set("client_id",cfg.discordClientId);
   u.searchParams.set("redirect_uri",cfg.redirectUri);
   u.searchParams.set("response_type","code");
-  // Per request, keep scopes to identify guilds
-  u.searchParams.set("scope",["identify","guilds"].join(" "));
+  // Scopes required by this app (identify, guilds, and guilds.members.read for member endpoint)
+  u.searchParams.set("scope",["identify","guilds","guilds.members.read"].join(" "));
   return u.toString();
 }
 async function apiGet(path){const t=token();if(!t)throw new Error("no_token");const r=await fetch(`${cfg.api}${path}`,{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error("api_error");return r.json()}
@@ -372,7 +372,13 @@ async function tryExchangeCode(code){
   try{
     if(!cfg.tokenExchangeUrl){ return false; }
     const res=await fetch(cfg.tokenExchangeUrl,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code, redirect_uri:cfg.redirectUri }) });
-    if(!res.ok){ return false; }
+    if(!res.ok){
+      let details='';
+      try{ details=await res.text(); }catch{}
+      console.error('Token exchange failed', res.status, details);
+      alertShow('Token exchange failed: '+res.status+' '+details);
+      return false;
+    }
     const data=await res.json();
     if(data && data.access_token){ setToken(data.access_token); return true; }
     return false;
