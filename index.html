@@ -19,7 +19,6 @@
       <a class="brand" href="#home"><span class="brand-accent">Nova</span>Sector</a>
       <nav class="links">
         <a href="#home" class="link">Home</a>
-        <a href="#features" class="link">Features</a>
         <a href="#about" class="link">About</a>
         <a href="#rules" class="link">Rules</a>
         <a href="#dashboard" class="link hidden" id="nav-dashboard">Dashboard</a>
@@ -32,8 +31,6 @@
           <img id="pill-avatar" alt="" />
           <span id="pill-name"></span>
         </div>
-        <a id="login-btn" class="btn btn-primary">Login with Discord</a>
-        <button id="logout-btn" class="btn btn-ghost" hidden>Logout</button>
       </div>
     </div>
   </header>
@@ -59,7 +56,8 @@
 
     <!-- Removed Community online members section per request -->
 
-    <section id="features" class="features container">
+    <!-- Features moved into Home below -->
+    <section id="home-features" class="features container">
       <h2 class="section-title">Why NovaSector</h2>
       <div class="grid">
         <div class="card">
@@ -165,7 +163,10 @@
         <div class="user">
           <img id="user-avatar" class="avatar" alt="avatar" />
           <div class="user-meta">
-            <div id="user-name" class="user-name"></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div id="user-name" class="user-name"></div>
+              <button id="logout-btn" class="btn btn-ghost" hidden>Logout</button>
+            </div>
             <div id="user-id" class="user-id"></div>
             <div id="staff-note" class="muted hidden">Staff member detected</div>
             <div id="staff-actions" class="staff-actions hidden">
