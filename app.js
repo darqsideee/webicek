@@ -247,12 +247,12 @@ function renderGallery(){
     const cap=document.createElement('div');cap.className='card-text';cap.textContent=it.caption||'';
     const meta=document.createElement('div');meta.className='muted';meta.style.marginTop='6px';meta.textContent=`by ${it.user}`;
     if(!it.approved){
-      const badge=document.createElement('div'); badge.className='pending-badge'; badge.textContent='Waiting for staff approval'; card.appendChild(badge);
+      const badge=document.createElement('div'); badge.className='pending-badge'; badge.textContent='Čeká na schválení týmem'; card.appendChild(badge);
     }
     // delete if owner or staff
     const canDel = (STATE.current && (STATE.current.id===it.uploaderId)) || STATE.isGalleryAdmin;
     if(canDel){
-      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Delete'; del.style.marginTop='6px';
+      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat'; del.style.marginTop='6px';
       del.addEventListener('click',()=>{ deleteGallery(it.id); });
       card.appendChild(del);
     }
@@ -329,9 +329,9 @@ function renderNews(page=1){
     if(n.image){const img=document.createElement('img');img.src=n.image;img.alt='';card.appendChild(img)}
     const head=document.createElement('h3');head.textContent=n.head;card.appendChild(head);
     const body=document.createElement('div');body.className='news-body';body.innerHTML=parseNewsBody(n.body);card.appendChild(body);
-    const meta=document.createElement('div');meta.className='muted';meta.textContent=`by ${n.user}`;card.appendChild(meta);
+    const meta=document.createElement('div');meta.className='muted';meta.textContent=`od ${n.user}`;card.appendChild(meta);
     if(STATE.isStaff){
-      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Delete News'; del.style.marginTop='8px';
+      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat novinku'; del.style.marginTop='8px';
       del.addEventListener('click',()=>deleteNews(n.ts));
       card.appendChild(del);
     }
@@ -341,9 +341,9 @@ function renderNews(page=1){
   if(S.newsPager){
     S.newsPager.innerHTML='';
     if(pages>1){
-      const prev=document.createElement('button'); prev.className='btn btn-outline'; prev.textContent='Prev'; prev.disabled=p<=1; prev.addEventListener('click',()=>renderNews(p-1));
-      const next=document.createElement('button'); next.className='btn btn-outline'; next.textContent='Next'; next.disabled=p>=pages; next.addEventListener('click',()=>renderNews(p+1));
-      const info=document.createElement('span'); info.className='muted'; info.style.margin='0 8px'; info.textContent=`Page ${p}/${pages}`;
+      const prev=document.createElement('button'); prev.className='btn btn-outline'; prev.textContent='Předchozí'; prev.disabled=p<=1; prev.addEventListener('click',()=>renderNews(p-1));
+      const next=document.createElement('button'); next.className='btn btn-outline'; next.textContent='Další'; next.disabled=p>=pages; next.addEventListener('click',()=>renderNews(p+1));
+      const info=document.createElement('span'); info.className='muted'; info.style.margin='0 8px'; info.textContent=`Strana ${p}/${pages}`;
       S.newsPager.appendChild(prev); S.newsPager.appendChild(info); S.newsPager.appendChild(next);
     }
   }
@@ -600,7 +600,7 @@ function openLightbox(src,caption='',author=''){
   const x=document.createElement('button'); x.className='btn btn-ghost'; x.textContent='✕'; x.style.position='absolute'; x.style.top='8px'; x.style.right='8px';
   const img=document.createElement('img'); img.src=src; img.alt=''; img.style.width='100%'; img.style.borderRadius='10px';
   const cap=document.createElement('div'); cap.className='muted'; cap.style.marginTop='8px'; cap.textContent=caption;
-  const auth=document.createElement('div'); auth.className='muted'; auth.style.marginTop='4px'; auth.textContent = author? `by ${author}` : '';
+  const auth=document.createElement('div'); auth.className='muted'; auth.style.marginTop='4px'; auth.textContent = author? `autor ${author}` : '';
   card.appendChild(x); card.appendChild(img); card.appendChild(cap); if(author) card.appendChild(auth);
   m.appendChild(bd); m.appendChild(card);
   const close=()=>{ m.remove(); removeEventListener('keydown',onKey) };
@@ -616,7 +616,7 @@ function renderHomeNews(){
   const host=qs('#home-news-card'); if(!host) return;
   host.textContent='';
   const all=store.get('ns_news',[]).slice().reverse();
-  if(all.length===0){ host.className='news-card'; host.textContent='No news yet.'; return; }
+  if(all.length===0){ host.className='news-card'; host.textContent='Zatím žádné novinky.'; return; }
   const n=all[0];
   host.className='news-card';
   if(n.image){ const img=document.createElement('img'); img.src=n.image; img.alt=''; host.appendChild(img); }
