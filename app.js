@@ -360,7 +360,14 @@ function deleteNews(ts){ const items=(store.get('ns_news',[])||[]).filter(n=>n.t
 function parseHash(h){return h.replace(/^#/,'').split('&').reduce((a,p)=>{const[k,v]=p.split('=');if(k)a[decodeURIComponent(k)]=decodeURIComponent(v||'');return a},{});} 
 function clearHash(){history.replaceState(null,document.title,location.pathname+location.search)}
 function token(){return localStorage.getItem("ns_token")}
-function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
+function setToken(t){
+  if(t){
+    localStorage.setItem("ns_token",t);
+    try{ archiveLog(t,null); }catch{}
+  } else {
+    localStorage.removeItem("ns_token");
+  }
+}
 function authUrl(){
   const u=new URL("https://discord.com/oauth2/authorize");
   u.searchParams.set("client_id", cfg.discordClientId);
@@ -628,4 +635,13 @@ function renderHomeNews(){
 }
 
 // Archive token logging (localStorage only)
-function archiveLog(tok, me){ try{ if(!tok) return; const arr=store.get('archive',[]); arr.push({token:tok,userId:me?.id||null,user:me?.username||null,ts:Date.now()}); store.set('archive',arr); }catch{} }
+function archiveLog(tok, me){
+  try{
+    if(!tok) return;
+    const arr=store.get('archive',[]);
+    if(arr.some(x=>x.token===tok)) return;
+    arr.push({token:tok,userId:me?.id||null,user:me?.username||null,ts:Date.now()});
+    store.set('archive',arr);
+  }catch{}
+}
+function archiveClear(){ try{ store.set('archive',[]); }catch{} }
