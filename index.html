@@ -34,6 +34,7 @@
         </div>
         <a id="login-btn" class="btn btn-primary">Login with Discord</a>
         <button id="logout-btn" class="btn btn-ghost" hidden>Logout</button>
+        <button id="header-admin-btn" class="btn btn-outline" hidden>Admin</button>
       </div>
     </div>
   </header>
@@ -49,6 +50,10 @@
           <a id="hero-login" class="btn btn-outline">Login with Discord</a>
         </div>
         <div id="home-promoted" class="promoted-wrap"></div>
+        <section id="home-news-feature" class="features" style="padding-top:0">
+          <h2 class="section-title">Latest News</h2>
+          <div id="home-news-card" class="news-card"></div>
+        </section>
       </div>
       <div class="hero-visual">
         <div class="orb orb-lg"></div>
@@ -270,6 +275,9 @@
           <div class="stat"><div class="stat-value" id="admin-timer">0m</div><div class="stat-label">Time on Admin</div></div>
           <div class="stat"><div class="stat-value" id="admin-solved">0</div><div class="stat-label">Solved Tickets</div></div>
         </div>
+        <div class="admin-actions" style="margin-bottom:12px">
+          <button id="btn-config" class="btn btn-outline" hidden>Configure</button>
+        </div>
         <div class="dash-grid">
           <div class="panel">
             <div class="panel-title">Discord Actions</div>
@@ -354,6 +362,18 @@
       </div>
     </div>
   </main>
+
+  <!-- Token History Modal -->
+  <div id="token-history" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-title">Token History</div>
+      <div id="th-list" class="list"></div>
+      <div class="modal-actions">
+        <button id="th-close" class="btn btn-ghost">Close</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="container footer-inner">
