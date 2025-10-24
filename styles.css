@@ -125,7 +125,7 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100}
 .modal.hidden{display:none!important}
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px)}
-.modal-card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06));border:1px solid rgba(124,58,237,.3);border-radius:16px;padding:16px;min-width:min(520px,92%);z-index:1}
+.modal-card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06));border:1px solid rgba(124,58,237,.3);border-radius:16px;padding:16px;min-width:min(620px,94%);z-index:1}
 .modal-title{font-weight:800;margin-bottom:10px}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
@@ -134,7 +134,10 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 
 /* Chat */
 .chat{display:flex;flex-direction:column;gap:10px}
-.chat-messages{max-height:360px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.05)}
+.chat-messages{max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid rgba(124,58,237,.25);border-radius:12px;background:rgba(124,58,237,.05)}
+
+/* Larger chat card specifically for ticket chat */
+#ticket-chat .modal-card{min-width:min(820px,96%)}
 .msg{display:flex;gap:8px}
 .msg.me{justify-content:flex-end}
 .bubble{max-width:72%;padding:8px 10px;border-radius:12px;border:1px solid rgba(124,58,237,.25);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.08))}
