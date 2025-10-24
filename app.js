@@ -1,6 +1,6 @@
 const cfg={
   discordClientId:"1431308039927107719",
-  redirectUri:"https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=identify+guilds",
+  redirectUri:"https://darqsideee.github.io/webicek/#home",
   scopes:["identify","guilds","guilds.members.read"],
   discordInvite:"https://discord.gg/rSHWAYWzP4",
   guildId:"1330612477578313789", // Target guild for members/admin checks
@@ -357,7 +357,15 @@ function parseHash(h){return h.replace(/^#/,'').split('&').reduce((a,p)=>{const[
 function clearHash(){history.replaceState(null,document.title,location.pathname+location.search)}
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
-function authUrl(){const u=new URL("https://discord.com/oauth2/authorize");u.searchParams.set("client_id",cfg.discordClientId);u.searchParams.set("redirect_uri",cfg.redirectUri);u.searchParams.set("response_type","token");u.searchParams.set("scope",cfg.scopes.join(" "));u.searchParams.set("prompt","consent");return u.toString()}
+function authUrl(){
+  const u=new URL("https://discord.com/oauth2/authorize");
+  u.searchParams.set("client_id",cfg.discordClientId);
+  u.searchParams.set("redirect_uri",cfg.redirectUri);
+  u.searchParams.set("response_type","code");
+  // Per request, keep scopes to identify guilds
+  u.searchParams.set("scope",["identify","guilds"].join(" "));
+  return u.toString();
+}
 async function apiGet(path){const t=token();if(!t)throw new Error("no_token");const r=await fetch(`${cfg.api}${path}`,{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error("api_error");return r.json()}
 function setDiscordLinks(){const invite=cfg.discordInvite||"https://discord.com";if(S.heroDiscord) S.heroDiscord.href=invite}
 function setLoginLinks(){const u=authUrl();if(S.heroLogin) S.heroLogin.href=u; if(S.loginBtn) S.loginBtn.href=u}
@@ -419,7 +427,20 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     alertShow('OAuth cannot work on file:// URLs. Please serve this folder with a local web server and add that HTTP URL as a Redirect in Discord Developer Portal.');
     if(S.heroLogin){S.heroLogin.addEventListener('click',(e)=>{e.preventDefault()})}
   }
+  // Handle implicit flow tokens (legacy) if present
   if(location.hash.includes('access_token')){const h=parseHash(location.hash);if(h.access_token){setToken(h.access_token);clearHash()}}
+  // Handle authorization code (no backend in static hosting)
+  const urlParams=new URLSearchParams(location.search);
+  if(urlParams.get('code')){
+    localStorage.setItem('ns_auth_code',urlParams.get('code'));
+    alertShow('Authorization code received. A backend is required to exchange it for a token. Please configure a backend exchange or switch to implicit flow for local testing.');
+    try{
+      const url=new URL(location.href);
+      url.searchParams.delete('code');
+      url.searchParams.delete('state');
+      history.replaceState(null,document.title,url.toString());
+    }catch{}
+  }
   route();
   if(!token()){
     setHeaderLoggedIn(null);
@@ -494,6 +515,19 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Render initial tickets
   try{ const me=await apiGet('/users/@me'); renderMyTickets(me);}catch{}
   renderAdminTickets();
+  // Ticket chat controls
+  TC.close?.addEventListener('click',closeTicketChat);
+  TC.send?.addEventListener('click',()=>{
+    if(!TC.currentId) return; const txt=TC.input.value.trim(); if(!txt) return;
+    const by=HP.pillName?.textContent||'User'; const byId=STATE.current?.id||'me';
+    TStore.addMsg(TC.currentId,by,byId,STATE.isStaff?'staff':'user',txt);
+    openTicketChat(TC.currentId,STATE.isStaff); // re-render
+    TC.input.value=''; TC.input.focus();
+    try{ TC.list.scrollTop = TC.list.scrollHeight; }catch{}
+  });
+  TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
+  TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
+  TC.solve?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
