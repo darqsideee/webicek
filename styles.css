@@ -143,6 +143,17 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 .chat-actions{display:flex;gap:8px}
 .chat-actions input{flex:1;background:transparent;border:1px solid rgba(124,58,237,.35);color:var(--text);padding:8px 10px;border-radius:10px}
 
+/* Gallery moderation */
+.pending-badge{display:inline-block;margin:6px 0;padding:6px 10px;border-radius:999px;border:1px dashed rgba(124,58,237,.5);color:var(--muted);font-size:.85rem}
+
+/* Home promoted gallery */
+.promoted-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.promoted-card{display:flex;flex-direction:column;gap:8px;border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06))}
+.promoted-card img{width:100%;border-radius:10px}
+.promoted-pub{display:flex;align-items:center;gap:8px}
+.promoted-pub img{width:24px;height:24px;border-radius:50%;border:1px solid rgba(124,58,237,.4)}
+.promoted-pub span{font-weight:600}
+
 @media (max-width: 900px){
   .hero{grid-template-columns:1fr;gap:24px;padding:50px 0}
   .grid{grid-template-columns:1fr}
@@ -150,6 +161,7 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
   .members{grid-template-columns:1fr}
   #admin-panel .admin-grid{grid-template-columns:1fr}
   .gallery-grid{grid-template-columns:1fr}
+  .promoted-wrap{grid-template-columns:1fr}
   .dash-grid{grid-template-columns:1fr}
   .stats{flex-wrap:wrap}
 }
