@@ -18,22 +18,19 @@
     <div class="container nav-inner">
       <a class="brand" href="#home"><span class="brand-accent">Nova</span>Sector</a>
       <nav class="links">
-        <a href="#home" class="link">Home</a>
-        <a href="#features" class="link">Features</a>
-        <a href="#about" class="link">About</a>
-        <a href="#rules" class="link">Rules</a>
-        <a href="#dashboard" class="link hidden" id="nav-dashboard">Dashboard</a>
-        <a href="#gallery" class="link">Gallery</a>
-        <a href="#news" class="link">News</a>
-        <a href="#tickets" class="link">Tickets</a>
+        <a href="#home" class="link">Domů</a>
+        <a href="#about" class="link">O nás</a>
+        <a href="#rules" class="link">Pravidla</a>
+        <a href="#dashboard" class="link hidden" id="nav-dashboard">Přehled</a>
+        <a href="#gallery" class="link">Galerie</a>
+        <a href="#news" class="link">Novinky</a>
+        <a href="#tickets" class="link">Tikety</a>
       </nav>
       <div class="actions">
         <div id="user-pill" class="user-pill hidden">
           <img id="pill-avatar" alt="" />
           <span id="pill-name"></span>
         </div>
-        <a id="login-btn" class="btn btn-primary">Login with Discord</a>
-        <button id="logout-btn" class="btn btn-ghost" hidden>Logout</button>
       </div>
     </div>
   </header>
@@ -43,14 +40,13 @@
     <section id="home" class="hero container">
       <div class="hero-content">
         <h1 class="title"><span class="brand-accent">Nova</span>Sector</h1>
-        <p class="subtitle">Premium FiveM experience with a sleek control center. Purple and black, fast and reactive.</p>
+        <p class="subtitle">Prémiový FiveM zážitek s moderním centrem ovládání. Fialová a černá, rychlé a plynulé.</p>
         <div class="cta">
-          <a id="hero-discord" class="btn btn-glow" target="_blank" rel="noreferrer noopener">Join Discord</a>
-          <a id="hero-login" class="btn btn-outline">Login with Discord</a>
+          <a id="hero-discord" class="btn btn-glow" target="_blank" rel="noreferrer noopener">Připojit se na Discord</a>
         </div>
         <div id="home-promoted" class="promoted-wrap"></div>
         <section id="home-news-feature" class="features" style="padding-top:0">
-          <h2 class="section-title">Latest News</h2>
+          <h2 class="section-title">Nejnovější novinka</h2>
           <div id="home-news-card" class="news-card"></div>
         </section>
       </div>
@@ -61,68 +57,64 @@
       </div>
     </section>
 
-    <!-- Removed Community online members section per request -->
-
-    <section id="features" class="features container">
-      <h2 class="section-title">Why NovaSector</h2>
-      <div class="grid">
-        <div class="card">
-          <div class="card-icon">⚡</div>
-          <h3 class="card-title">Performance</h3>
-          <p class="card-text">Optimized UI with smooth animations and ultra-fast navigation.</p>
-        </div>
-        <div class="card">
-          <div class="card-icon">🔒</div>
-          <h3 class="card-title">Secure Auth</h3>
-          <p class="card-text">Discord OAuth2 login with token handling on the client.</p>
-        </div>
-        <div class="card">
-          <div class="card-icon">🎮</div>
-          <h3 class="card-title">Server Ready</h3>
-          <p class="card-text">Built for FiveM communities with a clean dashboard layout.</p>
-        </div>
-      </div>
-    </section>
+    <!-- Sekce členů komunity byla odstraněna na žádost -->
 
     <section id="about" class="container section">
-      <h2 class="section-title">About Us</h2>
+      <h2 class="section-title">O nás</h2>
       <div class="about">
-        <p>NovaSector is a premium FiveM community focused on performance, immersion, and fairness. Our purple-on-black identity reflects our mix of elegance and power. We deliver fast updates, active moderation, and community-driven features.</p>
-        <div class="grid">
+        <p>NovaSector je prémiová FiveM komunita zaměřená na výkon, ponoření do hry a férovost. Naše fialovo-černá identita odráží kombinaci elegance a síly. Přinášíme rychlé aktualizace, aktivní moderaci a funkce tvořené komunitou.</p>
+        <div class="grid" style="margin-top:14px">
           <div class="card">
-            <h3 class="card-title">Our Mission</h3>
-            <p class="card-text">Provide a stable, enjoyable roleplay environment where creativity thrives and rules are clear.</p>
+            <div class="card-icon">⚡</div>
+            <h3 class="card-title">Výkon</h3>
+            <p class="card-text">Optimalizované rozhraní s plynulými animacemi a velmi rychlou navigací.</p>
           </div>
           <div class="card">
-            <h3 class="card-title">Key Pillars</h3>
+            <div class="card-icon">🔒</div>
+            <h3 class="card-title">Bezpečné přihlášení</h3>
+            <p class="card-text">Přihlášení přes Discord OAuth2 s bezpečným zpracováním tokenu.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">🎮</div>
+            <h3 class="card-title">Připraveno pro server</h3>
+            <p class="card-text">Navrženo pro FiveM komunity s přehledným panelem.</p>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3 class="card-title">Naše mise</h3>
+            <p class="card-text">Poskytnout stabilní a příjemné prostředí pro roleplay, kde může tvořivost prosperovat a pravidla jsou jasná.</p>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Klíčové pilíře</h3>
             <ul class="card-text">
-              <li>Active staff and transparent decisions</li>
-              <li>Optimized server with minimal desync</li>
-              <li>Player-first updates and feedback loops</li>
+              <li>Aktivní tým a transparentní rozhodnutí</li>
+              <li>Optimalizovaný server s minimálním desynchronizací</li>
+              <li>Aktualizace a zpětná vazba od hráčů</li>
             </ul>
           </div>
           <div class="card">
-            <h3 class="card-title">Get Involved</h3>
-            <p class="card-text">Join our Discord, read the rules, and hop into the server. We’re excited to have you.</p>
+            <h3 class="card-title">Zapojte se</h3>
+            <p class="card-text">Připojte se k našemu Discordu, přečtěte si pravidla a vstupte do serveru. Těšíme se na vás.</p>
           </div>
         </div>
         <div class="staff">
-          <h3 class="card-title" style="margin-top:16px">Team</h3>
+          <h3 class="card-title" style="margin-top:16px">Tým</h3>
           <div class="staff-grid">
             <div class="staff-card">
               <img src="https://cdn.discordapp.com/embed/avatars/1.png" alt="Owner" />
               <div class="staff-name">Owner</div>
-              <div class="staff-role">NovaSector Founder</div>
+              <div class="staff-role">Zakladatel NovaSector</div>
             </div>
             <div class="staff-card">
               <img src="https://cdn.discordapp.com/embed/avatars/2.png" alt="Admin" />
               <div class="staff-name">Admin</div>
-              <div class="staff-role">Community Management</div>
+              <div class="staff-role">Správa komunity</div>
             </div>
             <div class="staff-card">
               <img src="https://cdn.discordapp.com/embed/avatars/3.png" alt="Developer" />
               <div class="staff-name">Developer</div>
-              <div class="staff-role">Server & Scripts</div>
+              <div class="staff-role">Server a skripty</div>
             </div>
           </div>
         </div>
@@ -130,37 +122,16 @@
     </section>
 
     <section id="rules" class="container section">
-      <h2 class="section-title">Server Rules</h2>
+      <h2 class="section-title">Pravidla</h2>
       <div class="rules">
-        <div class="tabs">
-          <button class="tab active" data-tab="r-general">General</button>
-          <button class="tab" data-tab="r-roleplay">Roleplay</button>
-          <button class="tab" data-tab="r-staff">Staff</button>
-        </div>
-        <div class="tab-panels">
-          <div id="r-general" class="tab-panel active">
-            <ol>
-              <li>Respect all players and staff. No harassment or hate speech.</li>
-              <li>No cheating, exploiting, or unfair third-party tools.</li>
-              <li>Follow staff directions. Use proper channels for disputes.</li>
-            </ol>
-          </div>
-          <div id="r-roleplay" class="tab-panel">
-            <ol>
-              <li>Roleplay first: value life and avoid RDM/VDM.</li>
-              <li>Keep character names and actions in-universe.</li>
-              <li>Use voice/text channels appropriately; no metagaming.</li>
-            </ol>
-          </div>
-          <div id="r-staff" class="tab-panel">
-            <ol>
-              <li>Staff decisions are transparent and logged.</li>
-              <li>Appeals via Discord with evidence where possible.</li>
-              <li>Escalate issues respectfully and privately.</li>
-            </ol>
-          </div>
-        </div>
-        <p class="muted" style="margin-top:10px">Full rules are in Discord and may change. Check regularly.</p>
+        <ol>
+          <li>Respektujte všechny hráče i tým. Žádné obtěžování nebo nenávistné projevy.</li>
+          <li>Dodržujte pravidla Discordu a serveru. Cheaty a zneužívání jsou zakázány.</li>
+          <li>Udržujte roleplay realistický. Neničte ponoření ostatním.</li>
+          <li>Na podporu používejte tikety. Přiložte podrobnosti a případné důkazy.</li>
+          <li>Rozhodnutí týmu jsou konečná. Odvolání je možné oficiální cestou.</li>
+        </ol>
+        <p class="muted" style="margin-top:10px">Kompletní pravidla najdete na Discordu a mohou se měnit. Kontrolujte je pravidelně.</p>
       </div>
     </section>
 
@@ -171,9 +142,10 @@
           <div class="user-meta">
             <div id="user-name" class="user-name"></div>
             <div id="user-id" class="user-id"></div>
-            <div id="staff-note" class="muted hidden">Staff member detected</div>
+            <div id="staff-note" class="muted hidden">Zjištěn člen týmu</div>
             <div id="staff-actions" class="staff-actions hidden">
-              <a class="chip" id="btn-open-admin">Open Admin Panel</a>
+              <a class="chip" id="btn-open-admin">Otevřít administraci</a>
+              <button id="logout-btn" class="btn btn-ghost">Odhlásit se</button>
             </div>
           </div>
         </div>
@@ -184,68 +156,68 @@
           </div>
           <div class="stat">
             <div class="stat-value" id="stat-first-joined">–</div>
-            <div class="stat-label">First time joined</div>
+            <div class="stat-label">První připojení</div>
           </div>
           <div class="stat">
             <div class="stat-value" id="stat-last-joined">–</div>
-            <div class="stat-label">Last time joined</div>
+            <div class="stat-label">Poslední připojení</div>
           </div>
         </div>
       </div>
 
       <div class="dash-grid">
         <div class="panel">
-          <div class="panel-title">Your Stats</div>
+          <div class="panel-title">Vaše statistiky</div>
           <div id="my-stats" class="stats-grid">
-            <div class="stat"><div class="stat-value" id="stat-joined">–</div><div class="stat-label">Discord Since</div></div>
-            <div class="stat"><div class="stat-value" id="stat-roles">–</div><div class="stat-label">Roles in Guild</div></div>
+            <div class="stat"><div class="stat-value" id="stat-joined">–</div><div class="stat-label">Discord od</div></div>
+            <div class="stat"><div class="stat-value" id="stat-roles">–</div><div class="stat-label">Role v guildě</div></div>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-title">Characters</div>
-          <div id="char-list" class="list muted">No characters yet. Pending FiveM integration.</div>
+          <div class="panel-title">Galerie komunity</div>
+          <div id="char-list" class="list muted">Žádné postavy zatím. Čekáme na integraci s FiveM.</div>
         </div>
         <div class="panel">
-          <div class="panel-title">Inventory</div>
-          <div id="inv-list" class="list muted">No items to show. Pending FiveM integration (ox_inventory).</div>
+          <div class="panel-title">Inventář</div>
+          <div id="inv-list" class="list muted">Žádné položky k zobrazení. Čekáme na integraci s FiveM (ox_inventory).</div>
         </div>
         <div class="panel">
-          <div class="panel-title">Owned Vehicles</div>
-          <div id="veh-list" class="list muted">No vehicles to show. Pending FiveM integration.</div>
+          <div class="panel-title">Vlastněné vozidla</div>
+          <div id="veh-list" class="list muted">Žádná vozidla k zobrazení. Čekáme na integraci s FiveM.</div>
         </div>
         <div class="panel">
-          <div class="panel-title">Character History</div>
-          <div id="hist-list" class="list muted">No history yet. Pending FiveM integration.</div>
+          <div class="panel-title">Historie postav</div>
+          <div id="hist-list" class="list muted">Žádná historie zatím. Čekáme na integraci s FiveM.</div>
         </div>
         <!-- Admin moved to its own section -->
       </div>
     </section>
 
     <section id="gallery" class="container section">
-      <h2 class="section-title">Gallery</h2>
-      <div id="gallery-guard" class="muted">Login with Discord on the Home page to post photos.</div>
+      <h2 class="section-title">Galerie</h2>
+      <div id="gallery-guard" class="muted">Přihlaste se pomocí Discordu na hlavní stránce, abyste mohli přidávat fotografie.</div>
       <div id="gallery-form" class="panel hidden">
-        <div class="panel-title">New Photo</div>
+        <div class="panel-title">Nová fotografie</div>
         <div class="admin-actions">
-          <input id="gal-image" type="text" placeholder="Image URL" />
-          <div class="muted">or upload an image</div>
+          <input id="gal-image" type="text" placeholder="URL obrázku" />
+          <div class="muted">nebo nahrajte obrázek</div>
           <input id="gal-file" type="file" accept="image/*" />
-          <input id="gal-caption" type="text" placeholder="Caption" />
-          <button class="btn btn-primary" id="gal-post">Post</button>
+          <input id="gal-caption" type="text" placeholder="Popis" />
+          <button class="btn btn-primary" id="gal-post">Přidat</button>
         </div>
       </div>
       <div id="gallery-list" class="gallery-grid"></div>
     </section>
 
     <section id="news" class="container section">
-      <h2 class="section-title">News</h2>
+      <h2 class="section-title">Novinky</h2>
       <div id="news-admin" class="panel hidden">
-        <div class="panel-title">Create News (Staff)</div>
+        <div class="panel-title">Vytvořit novinku (Tým)</div>
         <div class="admin-actions">
-          <input id="news-image" type="text" placeholder="Image URL (optional)" />
-          <input id="news-head" type="text" placeholder="Headline" />
-          <textarea id="news-body" rows="6" placeholder="Body. Use **bold** and #Heading"></textarea>
-          <button class="btn btn-primary" id="news-post">Publish</button>
+          <input id="news-image" type="text" placeholder="URL obrázku (volitelné)" />
+          <input id="news-head" type="text" placeholder="Nadpis" />
+          <textarea id="news-body" rows="6" placeholder="Text. Použijte **tučné** a #Nadpis"></textarea>
+          <button class="btn btn-primary" id="news-post">Publikovat</button>
         </div>
       </div>
       <div id="news-list" class="news-list"></div>
@@ -253,65 +225,65 @@
     </section>
 
     <section id="tickets" class="container section" hidden>
-      <h2 class="section-title">Tickets</h2>
+      <h2 class="section-title">Tikety</h2>
       <div class="panel">
-        <div class="panel-title">Create a Ticket</div>
+        <div class="panel-title">Vytvořit tiket</div>
         <div class="admin-actions">
-          <button class="btn btn-primary" id="btn-open-ticket">Open Ticket</button>
+          <button class="btn btn-primary" id="btn-open-ticket">Otevřít tiket</button>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-title">Your Ticket History</div>
-        <div id="ticket-history" class="list muted">No tickets yet.</div>
+        <div class="panel-title">Vaše historie tiketů</div>
+        <div id="ticket-history" class="list muted">Žádné tikety zatím.</div>
       </div>
     </section>
 
     <section id="admin" class="container section" hidden>
-      <h2 class="section-title">Admin</h2>
-      <div id="admin-guard" class="muted">Staff only. You need the staff role to access this page.</div>
+      <h2 class="section-title">Administrace</h2>
+      <div id="admin-guard" class="muted">Pouze pro tým. Pro přístup potřebujete roli týmu.</div>
       <div id="admin-wrap" class="hidden">
         <div class="stats" style="margin-bottom:12px">
-          <div class="stat"><div class="stat-value" id="admin-timer">0m</div><div class="stat-label">Time on Admin</div></div>
-          <div class="stat"><div class="stat-value" id="admin-solved">0</div><div class="stat-label">Solved Tickets</div></div>
+          <div class="stat"><div class="stat-value" id="admin-timer">0m</div><div class="stat-label">Čas v administraci</div></div>
+          <div class="stat"><div class="stat-value" id="admin-solved">0</div><div class="stat-label">Vyřešené tikety</div></div>
         </div>
         <div class="dash-grid">
           <div class="panel">
-            <div class="panel-title">Discord Actions</div>
+            <div class="panel-title">Akce na Discordu</div>
             <div class="admin-actions">
-              <input id="ad-discord-user" type="text" placeholder="Discord User ID" />
-              <input id="ad-discord-reason" type="text" placeholder="Reason (required)" />
+              <input id="ad-discord-user" type="text" placeholder="ID uživatele Discord" />
+              <input id="ad-discord-reason" type="text" placeholder="Důvod (povinné)" />
               <div class="action-row">
-                <button class="btn btn-outline" id="ad-discord-kick" disabled>Kick</button>
+                <button class="btn btn-outline" id="ad-discord-kick" disabled>Vyhodit</button>
                 <button class="btn btn-outline" id="ad-discord-ban" disabled>Ban</button>
               </div>
             </div>
           </div>
           <div class="panel">
-            <div class="panel-title">FiveM Actions</div>
+            <div class="panel-title">Akce na FiveM</div>
             <div class="admin-actions">
-              <input id="ad-fivem-id" type="text" placeholder="FiveM ID" />
-              <input id="ad-fivem-reason" type="text" placeholder="Reason (required)" />
+              <input id="ad-fivem-id" type="text" placeholder="ID FiveM" />
+              <input id="ad-fivem-reason" type="text" placeholder="Důvod (povinné)" />
               <div class="action-row">
-                <button class="btn btn-outline" id="ad-fivem-kick" disabled>Kick</button>
+                <button class="btn btn-outline" id="ad-fivem-kick" disabled>Vyhodit</button>
                 <button class="btn btn-outline" id="ad-fivem-ban" disabled>Ban</button>
-                <button class="btn btn-outline" id="ad-fivem-announce" disabled>Announce</button>
+                <button class="btn btn-outline" id="ad-fivem-announce" disabled>Oznámit</button>
               </div>
             </div>
           </div>
           <div class="panel">
-            <div class="panel-title">Open Tickets</div>
-            <div id="admin-tickets" class="list muted">No open tickets.</div>
+            <div class="panel-title">Otevřené tikety</div>
+            <div id="admin-tickets" class="list muted">Žádné otevřené tikety.</div>
           </div>
           <div class="panel hidden" id="admin-gal-allow">
-            <div class="panel-title">Gallery Allowance</div>
-            <div id="admin-gal-list" class="list muted">No pending images.</div>
+            <div class="panel-title">Povolení galerie</div>
+            <div id="admin-gal-list" class="list muted">Žádné čekající obrázky.</div>
           </div>
           <div class="panel hidden" id="admin-closed">
-            <div class="panel-title">Closed Tickets (History)</div>
-            <div id="admin-closed-list" class="list muted">No closed tickets.</div>
+            <div class="panel-title">Uzavřené tikety (Historie)</div>
+            <div id="admin-closed-list" class="list muted">Žádné uzavřené tikety.</div>
           </div>
           <div class="panel hidden" id="admin-logs">
-            <div class="panel-title">Admin Logs</div>
+            <div class="panel-title">Logy administrace</div>
             <div id="logs-list" class="list"></div>
           </div>
         </div>
@@ -322,18 +294,24 @@
     <div id="ticket-modal" class="modal hidden">
       <div class="modal-backdrop"></div>
       <div class="modal-card">
-        <div class="modal-title">Open a Ticket</div>
-        <select id="tm-type">
-          <option value="Bugs">Bugs</option>
-          <option value="Report">Report</option>
-          <option value="Question">Question</option>
-          <option value="Unban">Unban</option>
-        </select>
-        <input id="tm-reason" type="text" placeholder="Reason (required)" />
-        <input id="tm-image" type="file" accept="image/*" />
-        <div class="modal-actions">
-          <button class="btn btn-primary" id="tm-create">Create</button>
-          <button class="btn btn-ghost" id="tm-cancel">Cancel</button>
+        <div class="modal-title">Vytvořit tiket</div>
+        <div class="ticket-form">
+          <div class="grid">
+            <div class="grid-col">
+              <label for="ticket-type">Typ tiketu</label>
+              <select id="ticket-type">
+                <option value="ban">Odvolání proti banu</option>
+                <option value="bug">Nahlášení chyby</option>
+                <option value="support">Podpora</option>
+              </select>
+            </div>
+            <div class="grid-col">
+              <label for="ticket-reason">Důvod</label>
+              <input id="ticket-reason" type="text" placeholder="Popište svůj problém" />
+            </div>
+            <div class="grid-col"><label for="ticket-image">Obrázek (volitelné)</label><input id="ticket-image" type="file" accept="image/*" /></div>
+          </div>
+          <div class="form-actions"><button class="btn" id="ticket-create">Vytvořit</button></div>
         </div>
       </div>
     </div>
