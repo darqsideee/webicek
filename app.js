@@ -8,6 +8,7 @@ const cfg={
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
   galleryAdminRoleId:"1399465429516161024",
+  tokenExchangeUrl:"https://soft-glade-957c.darqsideee.workers.dev/", // TODO: set to your deployed Worker URL
   api:"https://discord.com/api"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
@@ -358,7 +359,7 @@ function clearHash(){history.replaceState(null,document.title,location.pathname+
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
 function authUrl(){
-  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=identify+guilds+guilds.members.read");
+  const u=new URL("https://discord.com/oauth2/authorize");
   u.searchParams.set("client_id",cfg.discordClientId);
   u.searchParams.set("redirect_uri",cfg.redirectUri);
   u.searchParams.set("response_type","code");
@@ -367,6 +368,16 @@ function authUrl(){
   return u.toString();
 }
 async function apiGet(path){const t=token();if(!t)throw new Error("no_token");const r=await fetch(`${cfg.api}${path}`,{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error("api_error");return r.json()}
+async function tryExchangeCode(code){
+  try{
+    if(!cfg.tokenExchangeUrl){ return false; }
+    const res=await fetch(cfg.tokenExchangeUrl,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ code, redirect_uri:cfg.redirectUri }) });
+    if(!res.ok){ return false; }
+    const data=await res.json();
+    if(data && data.access_token){ setToken(data.access_token); return true; }
+    return false;
+  }catch{ return false; }
+}
 function setDiscordLinks(){const invite=cfg.discordInvite||"https://discord.com";if(S.heroDiscord) S.heroDiscord.href=invite}
 function setLoginLinks(){const u=authUrl();if(S.heroLogin) S.heroLogin.href=u; if(S.loginBtn) S.loginBtn.href=u}
 function showDashboard(v){S.dashboard.hidden=!v;S.logoutBtn.hidden=!v; if(S.loginBtn) S.loginBtn.hidden=!!v}
@@ -432,14 +443,13 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Handle authorization code (no backend in static hosting)
   const urlParams=new URLSearchParams(location.search);
   if(urlParams.get('code')){
-    localStorage.setItem('ns_auth_code',urlParams.get('code'));
-    alertShow('Authorization code received. A backend is required to exchange it for a token. Please configure a backend exchange or switch to implicit flow for local testing.');
-    try{
-      const url=new URL(location.href);
-      url.searchParams.delete('code');
-      url.searchParams.delete('state');
-      history.replaceState(null,document.title,url.toString());
-    }catch{}
+    const code=urlParams.get('code');
+    const exchanged=await tryExchangeCode(code);
+    try{ const url=new URL(location.href); url.searchParams.delete('code'); url.searchParams.delete('state'); history.replaceState(null,document.title,url.toString()); }catch{}
+    if(!exchanged){
+      alertShow('Authorization code received but token exchange failed. Configure cfg.tokenExchangeUrl to your backend.');
+      return;
+    }
   }
   route();
   if(!token()){
