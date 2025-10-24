@@ -1,6 +1,6 @@
 const cfg={
   discordClientId:"1431308039927107719",
-  redirectUri:"https://darqsideee.github.io/webicek/#home",
+  redirectUri:"https://darqsideee.github.io/webicek/",
   scopes:["identify","guilds","guilds.members.read"],
   discordInvite:"https://discord.gg/rSHWAYWzP4",
   guildId:"1330612477578313789", // Target guild for members/admin checks
@@ -8,7 +8,7 @@ const cfg={
   logsRoleId:"1399463718978588804",
   closedHistoryRoleId:"1400548624248737922",
   galleryAdminRoleId:"1399465429516161024",
-  tokenExchangeUrl:"https://asa-16w9qfk44-darqsideees-projects.vercel.app", // Cloudflare Worker endpoint
+  tokenExchangeUrl:"https://pepa.darqsideee.workers.dev/", // Cloudflare Worker endpoint
   api:"https://discord.com/api"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
