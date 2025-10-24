@@ -359,12 +359,12 @@ function clearHash(){history.replaceState(null,document.title,location.pathname+
 function token(){return localStorage.getItem("ns_token")}
 function setToken(t){if(t)localStorage.setItem("ns_token",t);else localStorage.removeItem("ns_token")}
 function authUrl(){
-  const u=new URL("https://discord.com/oauth2/authorize?client_id=1431308039927107719&response_type=code&redirect_uri=https%3A%2F%2Fdarqsideee.github.io%2Fwebicek%2F%23home&scope=identify+guilds+guilds.members.read");
-  u.searchParams.set("client_id",cfg.discordClientId);
-  u.searchParams.set("redirect_uri",cfg.redirectUri);
-  u.searchParams.set("response_type","code");
-  // Scopes required by this app (identify, guilds, and guilds.members.read for member endpoint)
-  u.searchParams.set("scope",["identify","guilds","guilds.members.read"].join(" "));
+  const u=new URL("https://discord.com/oauth2/authorize");
+  u.searchParams.set("client_id", cfg.discordClientId);
+  u.searchParams.set("redirect_uri", cfg.redirectUri);
+  u.searchParams.set("response_type", "code");
+  const scopes = Array.isArray(cfg.scopes) && cfg.scopes.length ? cfg.scopes : ["identify","guilds","guilds.members.read"];
+  u.searchParams.set("scope", scopes.join(" "));
   return u.toString();
 }
 async function apiGet(path){const t=token();if(!t)throw new Error("no_token");const r=await fetch(`${cfg.api}${path}`,{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error("api_error");return r.json()}
