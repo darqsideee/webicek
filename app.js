@@ -239,8 +239,13 @@ const store={
   get(key,def){try{return JSON.parse(localStorage.getItem(key)||'null')??def}catch{return def}},
   set(key,val){localStorage.setItem(key,JSON.stringify(val))}
 };
-function renderGallery(){
-  const items=store.get('ns_gallery',[]);
+async function renderGallery(){
+  let items;
+  try{
+    items = await dataGet('/gallery');
+  }catch{
+    items = store.get('ns_gallery',[]);
+  }
   if(!S.galleryList) return;
   S.galleryList.innerHTML='';
   items.slice().reverse().forEach(it=>{
@@ -269,12 +274,17 @@ function renderGallery(){
     S.galleryList.appendChild(card);
   });
 }
-function addGallery(image,caption,user){
-  const items=store.get('ns_gallery',[]);
-  const id=`g_${Date.now()}`;
-  const uploaderAvatar = HP.pillImg?.src||'';
-  items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar,approved:false,promoted:false,ts:Date.now()});
-  store.set('ns_gallery',items);
+async function addGallery(image,caption,user){
+  const payload={image,caption,user};
+  try{
+    await dataPost('/gallery',payload);
+  }catch{
+    const items=store.get('ns_gallery',[]);
+    const id=`g_${Date.now()}`;
+    const uploaderAvatar = HP.pillImg?.src||'';
+    items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar,approved:true,promoted:false,ts:Date.now()});
+    store.set('ns_gallery',items);
+  }
   renderGallery();
   renderAdminGalleryPending();
 }
@@ -324,8 +334,11 @@ function parseNewsBody(src){
   return html;
 }
 const NEWS_PAGE_SIZE=5;
-function renderNews(page=1){
-  const all=store.get('ns_news',[]).slice().reverse();
+async function renderNews(page=1){
+  let all;
+  try{ all = await dataGet('/news'); }
+  catch{ all = store.get('ns_news',[]); }
+  all = (all||[]).slice().reverse();
   if(!S.newsList) return;
   const pages=Math.max(1,Math.ceil(all.length/NEWS_PAGE_SIZE));
   const p=Math.min(Math.max(1,page),pages);
@@ -356,14 +369,22 @@ function renderNews(page=1){
     }
   }
 }
-function addNews(image,head,body,user){
-  const items=store.get('ns_news',[]);
-  items.push({image,head,body,user,ts:Date.now()});
-  store.set('ns_news',items);
+async function addNews(image,head,body,user){
+  const n={image,head,body,user};
+  try{ await dataPost('/news',n); }
+  catch{
+    const items=store.get('ns_news',[]);
+    items.push({image,head,body,user,ts:Date.now()});
+    store.set('ns_news',items);
+  }
   renderNews(1);
   renderHomeNews();
 }
-function deleteNews(ts){ const items=(store.get('ns_news',[])||[]).filter(n=>n.ts!==ts); store.set('ns_news',items); renderNews(STATE.newsPage||1); renderHomeNews(); }
+async function deleteNews(ts){
+  try{ await dataDelete(`/news?ts=${encodeURIComponent(String(ts))}`); }
+  catch{ const items=(store.get('ns_news',[])||[]).filter(n=>n.ts!==ts); store.set('ns_news',items); }
+  renderNews(STATE.newsPage||1); renderHomeNews();
+}
 function parseHash(h){return h.replace(/^#/,'').split('&').reduce((a,p)=>{const[k,v]=p.split('=');if(k)a[decodeURIComponent(k)]=decodeURIComponent(v||'');return a},{});} 
 function clearHash(){history.replaceState(null,document.title,location.pathname+location.search)}
 function token(){return localStorage.getItem("ns_token")}
@@ -495,6 +516,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     renderNews();
     renderHomeNews();
     // Tickets for logged-out cannot create
+    STATE.canOpenTickets=false; applyTicketGate();
     return;
   }
   try{
@@ -555,7 +577,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   renderNews(STATE.newsPage||1);
   renderHomePromoted();
   renderHomeNews();
-  applyTicketGate();
+  STATE.canOpenTickets=true; applyTicketGate();
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCancel?.addEventListener('click',()=>showTicketModal(false));
@@ -633,10 +655,13 @@ function openLightbox(src,caption='',author=''){
 }
 
 // Home big news feature
-function renderHomeNews(){
+async function renderHomeNews(){
   const host=qs('#home-news-card'); if(!host) return;
   host.textContent='';
-  const all=store.get('ns_news',[]).slice().reverse();
+  let all=store.get('ns_news',[]);
+  host.dataset.src='remote';
+  try{ all = (await dataGet('/news'))||all; }catch{}
+  all = all.slice().reverse();
   if(all.length===0){ host.className='news-card'; host.textContent='Zatím žádné novinky.'; return; }
   const n=all[0];
   host.className='news-card';
@@ -653,5 +678,11 @@ function applyTicketGate(){
   if(STATE.canOpenTickets){ btn.disabled=false; btn.classList.remove('disabled'); }
   else { btn.disabled=true; btn.classList.add('disabled'); }
 }
+
+// Worker data API helpers (use same origin as tokenExchangeUrl)
+function baseWorker(){ const u=new URL(cfg.tokenExchangeUrl); u.hash=''; u.search=''; return u.origin; }
+async function dataGet(path){ const r=await fetch(`${baseWorker()}${path}`,{headers:{'Content-Type':'application/json'}}); if(!r.ok) throw new Error('data_get'); return r.json(); }
+async function dataPost(path,body){ const r=await fetch(`${baseWorker()}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error('data_post'); return r.json().catch(()=>({ok:true})); }
+async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{method:'DELETE'}); if(!r.ok) throw new Error('data_del'); return true; }
 
 // Auto-refresh disabled per request
