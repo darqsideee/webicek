@@ -170,6 +170,22 @@ export default {
           catch(e){ return json({ ok:false, error:'gw_list_error', message:e.message }, env, 500); }
         }
 
+        // Bot revive heartbeat: post a small ping to a channel to keep bot/process active
+        if (path === '/revive' && method === 'POST'){
+          try{
+            if(!env.BOT_TOKEN) return json({ ok:false, error:'missing_bot_token' }, env, 400);
+            const { channelId, by } = await request.json();
+            if(!channelId) return json({ ok:false, error:'missing_channel' }, env, 400);
+            const content = `revive ping ${by? '('+by+')' : ''}`;
+            const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`,{
+              method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bot ${env.BOT_TOKEN}` },
+              body: JSON.stringify({ content })
+            });
+            if(!r.ok){ const txt=await r.text().catch(()=>'' ); return json({ ok:false, error:'revive_failed', details:txt }, env, 502); }
+            return json({ ok:true }, env);
+          }catch(e){ return json({ ok:false, error:'revive_error', message:e.message }, env, 500); }
+        }
+
         if (path === '/tickets' && method === 'DELETE') {
           const id = url.searchParams.get('id');
           if(!id) return json({ ok:false, error:'missing_id' }, env, 400);
