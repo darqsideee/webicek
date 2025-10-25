@@ -295,9 +295,32 @@
             <div class="panel-title">Logy administrace</div>
             <div id="logs-list" class="list"></div>
           </div>
+          <div class="panel">
+            <div class="panel-title">Nástroje</div>
+            <div class="panel-actions">
+              <button class="btn btn-outline" id="admin-cleaner-open">Čistič</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
+
+    <!-- Cleaner Modal -->
+    <div id="cleaner-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card" style="max-width:900px">
+        <div class="modal-title">Čistič</div>
+        <button class="btn btn-ghost" id="cleaner-close" style="position:absolute;top:10px;right:10px">✕</button>
+        <div class="admin-actions">
+          <div class="action-row">
+            <button class="btn" id="cleaner-tab-gallery">Fotky</button>
+            <button class="btn btn-outline" id="cleaner-tab-news" style="margin-left:8px">Novinky</button>
+          </div>
+        </div>
+        <div id="cleaner-gallery" class="list" style="max-height:420px;overflow:auto"></div>
+        <div id="cleaner-news" class="list hidden" style="max-height:420px;overflow:auto"></div>
+      </div>
+    </div>
 
     <!-- Ticket Modal -->
     <div id="ticket-modal" class="modal hidden">
