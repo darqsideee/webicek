@@ -842,8 +842,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
 
 // Giveaway modal wiring (owner only)
 function initGiveawayUI(){ try{
-  const ownerId='1399465075722551376';
-  const isOwner = STATE?.current?.id === ownerId;
+  const allowed = (STATE?.isStaff===true) || (cfg.ownerIds ? cfg.ownerIds.includes(STATE?.current?.id) : (STATE?.current?.id==='1399465075722551376'));
   const G={ wrap:qs('#giveaway-modal'), open:qs('#owner-giveaway-open'), close:qs('#giveaway-close'), list:qs('#gw-list'), detail:qs('#gw-detail'), eta:qs('#gw-eta'), count:qs('#gw-count'), users:qs('#gw-users'), endNW:qs('#gw-end-nw'), endW:qs('#gw-end-w'), reroll:qs('#gw-reroll'), finish:qs('#gw-finish') };
   if(!G.wrap) return;
   const show=(v)=>{ if(v) G.wrap.classList.remove('hidden'); else G.wrap.classList.add('hidden'); };
@@ -858,8 +857,8 @@ function initGiveawayUI(){ try{
     G.reroll.onclick=()=> alertShow('Endpoint pro reroll zatím není implementován.');
     G.finish.onclick=()=> alertShow('Endpoint pro finish zatím není implementován.');
   }
-  G.open?.classList[isOwner?'remove':'add']('hidden');
-  G.open?.addEventListener('click',()=>{ if(!isOwner){ alertShow('Pouze owner.'); return; } show(true); loadList(); });
+  G.open?.classList[allowed?'remove':'add']('hidden');
+  G.open?.addEventListener('click',()=>{ if(!allowed){ alertShow('Pouze owner.'); return; } show(true); loadList(); });
   G.close?.addEventListener('click',()=> show(false));
   qs('#giveaway-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
 }catch{} }
@@ -1048,20 +1047,19 @@ async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{m
 
 // Owner-only UI helper
 function setupOwnerUI(){ try{
-  const ownerId='1399465075722551376';
   const btnTools=qs('#owner-tools-open');
   const btnGive=qs('#owner-giveaway-open');
-  const isOwner = STATE?.current?.id === ownerId;
-  if(btnTools){ if(isOwner) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
-  if(btnGive){ if(isOwner) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
+  const allowed = (STATE?.isStaff===true) || (cfg.ownerIds ? cfg.ownerIds.includes(STATE?.current?.id) : (STATE?.current?.id==='1399465075722551376'));
+  if(btnTools){ if(allowed) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
+  if(btnGive){ if(allowed) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
   // Wire owner tools modal
   const OW={wrap:qs('#owner-modal'), close:qs('#owner-close'), open:btnTools, ch:qs('#owner-channel'), type:qs('#owner-type'), head:qs('#owner-head'), body:qs('#owner-body'), icon:qs('#owner-footericon'), send:qs('#owner-send')};
   const show=(v)=>{ if(!OW.wrap) return; if(v) OW.wrap.classList.remove('hidden'); else OW.wrap.classList.add('hidden'); };
-  OW.open?.addEventListener('click',()=>{ if(!isOwner){ alertShow('Pouze owner.'); return; } show(true); });
+  OW.open?.addEventListener('click',()=>{ if(!allowed){ alertShow('Pouze owner.'); return; } show(true); });
   OW.close?.addEventListener('click',()=> show(false));
   qs('#owner-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
   OW.send?.addEventListener('click', async ()=>{
-    if(!isOwner){ alertShow('Pouze owner.'); return; }
+    if(!allowed){ alertShow('Pouze owner.'); return; }
     const channelId=(OW.ch?.value||'').trim(); const type=(OW.type?.value||'normal');
     const head=(OW.head?.value||'').trim(); const text=(OW.body?.value||'').trim(); const footerIcon=(OW.icon?.value||'').trim();
     const durationMin = Number(qs('#owner-gw-duration')?.value||60);
