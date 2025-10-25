@@ -306,6 +306,8 @@
             <div class="panel-actions">
               <button class="btn btn-outline" id="admin-cleaner-open">Čistič</button>
               <button class="btn btn-outline" id="admin-dm-open">Messager</button>
+              <button class="btn btn-outline hidden" id="owner-tools-open">Owner Tools</button>
+              <button class="btn btn-outline hidden" id="owner-giveaway-open">Giveaways</button>
             </div>
           </div>
         </div>
@@ -361,6 +363,77 @@
       </div>
     </div>
   </div>
+
+    <!-- Owner Tools Modal -->
+    <div id="owner-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card" style="max-width:760px">
+        <div class="modal-title">Owner Tools</div>
+        <button class="btn btn-ghost" id="owner-close" style="position:absolute;top:10px;right:10px">✕</button>
+        <div class="admin-actions">
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px">
+            <div>
+              <label class="muted" for="owner-channel">Channel ID</label>
+              <input id="owner-channel" type="text" placeholder="Např. 123456789012345678" />
+            </div>
+            <div>
+              <label class="muted" for="owner-type">Typ</label>
+              <select id="owner-type">
+                <option value="normal">Normální oznámení</option>
+                <option value="giveaway">Giveaway (minimální)</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1">
+              <label class="muted" for="owner-head">Nadpis</label>
+              <input id="owner-head" type="text" placeholder="Titulek" />
+            </div>
+            <div style="grid-column:1/-1">
+              <label class="muted" for="owner-body">Text</label>
+              <textarea id="owner-body" rows="6" placeholder="Text zprávy"></textarea>
+            </div>
+            <div style="grid-column:1/-1">
+              <label class="muted" for="owner-footericon">Footer Icon URL (volitelné)</label>
+              <input id="owner-footericon" type="text" placeholder="https://..." />
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" id="owner-send">Odeslat</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Giveaway Manager Modal -->
+    <div id="giveaway-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card" style="max-width:860px">
+        <div class="modal-title">Giveaways</div>
+        <button class="btn btn-ghost" id="giveaway-close" style="position:absolute;top:10px;right:10px">✕</button>
+        <div class="admin-actions">
+          <div id="gw-list" class="list muted">Žádné probíhající soutěže.</div>
+          <div id="gw-detail" class="hidden">
+            <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px">
+              <div>
+                <div class="muted">Zbývající čas</div>
+                <div id="gw-eta" class="g-name">—</div>
+              </div>
+              <div>
+                <div class="muted">Účastníci</div>
+                <div id="gw-count" class="g-name">0</div>
+              </div>
+              <div style="grid-column:1/-1">
+                <div class="muted">Seznam účastníků</div>
+                <div id="gw-users" class="list"></div>
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top:12px">
+              <button class="btn btn-muted" id="gw-end-nw">Ukončit bez výherce</button>
+              <button class="btn btn-outline" id="gw-end-w">Ukončit s výhercem</button>
+              <button class="btn btn-outline" id="gw-reroll">Reroll výherce</button>
+              <button class="btn btn-primary" id="gw-finish">Finish soutěž</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Ticket Modal -->
     <div id="ticket-modal" class="modal hidden">
