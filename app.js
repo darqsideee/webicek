@@ -574,14 +574,16 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     show(S.staffNote);
     show(S.staffActions);
     show(S.newsAdmin);
-    S.btnOpenAdmin?.addEventListener('click',()=>{ location.hash='#admin'; startAdminTimer(); });
+    S.btnOpenAdmin?.addEventListener('click',()=>{ location.hash='#admin'; startAdminTimer(); renderAdminTickets(); renderAdminGalleryPending(); if(STATE.canSeeLogs) renderGalleryLogs(); });
     // Admin page gate
     if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
     try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
       if(roles.includes(cfg.logsRoleId)){ A.logs?.classList.remove('hidden'); STATE.canSeeLogs=true; }
       if(roles.includes(cfg.closedHistoryRoleId)){ A.closedPanel?.classList.remove('hidden'); renderClosedTickets(); }
-      if(roles.includes(cfg.galleryAdminRoleId)){ STATE.isGalleryAdmin=true; A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); }
+      if(roles.includes(cfg.galleryAdminRoleId)){ STATE.isGalleryAdmin=true; }
       STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
+      // For any staff, show approvals panel and logs list
+      if(STATE.isStaff){ A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); A.logs?.classList.remove('hidden'); renderGalleryLogs(); }
     }catch{}
   } else {
     if(A.guard && A.wrap){ A.guard.classList.remove('hidden'); A.wrap.classList.add('hidden'); }
@@ -592,7 +594,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     }catch{}
   }
   // If staff detected by roles, ensure staff UI is visible
-  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); }
+  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); renderAdminTickets(); A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); if(A.logs){ A.logs.classList.remove('hidden'); renderGalleryLogs(); } }
   showDashboard(true);
  }catch(e){
    setHeaderLoggedIn(null);
@@ -611,7 +613,6 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   STATE.canOpenTickets=true; applyTicketGate();
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
-  T.mCancel?.addEventListener('click',()=>showTicketModal(false));
   T.mCreate?.addEventListener('click',()=>{
     const type=T.mType.value; const reason=T.mReason.value.trim(); if(!reason) {T.mReason.focus(); return}
     let img=null; const f=T.mImage.files?.[0];
