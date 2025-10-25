@@ -140,18 +140,12 @@ const TStore={
   addMsg(id,byName,byId,role,text,image){const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return; (t.messages||(t.messages=[])).push({by:byName, byId, role, text, image:image||null, ts:Date.now()}); this.save(v); return t}
 };
 
-let __adminTimer=null, __adminStart=null;
+let __adminTimer=null;
 function startAdminTimer(){
   if(!A.timer) return;
   if(__adminTimer) clearInterval(__adminTimer);
-  __adminStart=Date.now();
-  const tick=()=>{
-    const elapsed=Date.now()-__adminStart;
-    const m=Math.floor(elapsed/60000);
-    A.timer.textContent=`${m}m`;
-  };
-  tick();
-  __adminTimer=setInterval(tick,5000);
+  A.timer.textContent='—';
+  // Timer disabled per request
 }
 
 function showTicketModal(v){
@@ -165,30 +159,40 @@ function ticketItemEl(t,opts={}){
   wrap.className='guild';
   const meta=document.createElement('div');
   const solverInfo = t.solvedBy? ` • Solved by ${t.solvedBy}`: '';
-  meta.innerHTML=`<div class="g-name">#${t.no} • ${t.type} • ${new Date(t.ts).toLocaleString()}${solverInfo}</div><div class="g-id">${t.reason}</div>`;
+  meta.innerHTML=`<div class="g-name">#${t.no||'?'} • ${t.type} • ${new Date(t.ts).toLocaleString()}${solverInfo}</div><div class="g-id">${t.reason}</div>`;
   wrap.appendChild(meta);
   if(t.image){ const img=document.createElement('img'); img.src=t.image; img.alt='evidence'; img.style.width='46px'; img.style.height='46px'; img.style.borderRadius='8px'; wrap.insertBefore(img,meta); }
   wrap.style.cursor='pointer';
   wrap.addEventListener('click',()=> openTicketChat(t.id, !!opts.adminView));
   if(t.status==='closed'){
-    const badge=document.createElement('span'); badge.className='chip'; badge.textContent='Closed'; badge.style.marginLeft='auto'; badge.style.background='#3a2'; badge.style.background='#000'; badge.style.border='1px solid #e11d48'; badge.style.color='#e11d48';
+    const badge=document.createElement('span'); badge.className='chip'; badge.textContent='Closed'; badge.style.marginLeft='auto'; badge.style.background='#000'; badge.style.border='1px solid #e11d48'; badge.style.color='#e11d48';
     wrap.appendChild(badge);
   }
   return wrap;
 }
 
-function renderMyTickets(me){
+async function syncTicketsFromServer(){
+  try{
+    const remote = await dataGet('/tickets');
+    if(Array.isArray(remote)){
+      // merge: server is source of truth
+      store.set('ns_tickets', remote);
+    }
+  }catch{}
+}
+async function renderMyTickets(me){
   if(!T.history||!me) return;
   const uid=me.id||String(me);
+  await syncTicketsFromServer();
   const items=TStore.byUser(uid);
   if(items.length===0){ T.history.textContent='No tickets yet.'; return; }
   T.history.textContent='';
   items.forEach(t=>{
     const row=ticketItemEl(t);
     if(t.status==='closed'){
-      // allow user to delete from history
+      // allow user to delete from local history view only
       const del=document.createElement('button'); del.className='btn btn-ghost'; del.textContent='Smazat z historie'; del.style.marginLeft='8px';
-      del.addEventListener('click',async (e)=>{ e.stopPropagation(); try{ await dataDelete(`/tickets?id=${encodeURIComponent(t.id)}`); }catch{} const v=TStore.all().filter(x=>x.id!==t.id); TStore.save(v); renderMyTickets({id:uid}); });
+      del.addEventListener('click',(e)=>{ e.stopPropagation(); const v=TStore.all().filter(x=>x.id!==t.id); TStore.save(v); renderMyTickets({id:uid}); });
       row.appendChild(del);
     }
     T.history.appendChild(row);
@@ -197,23 +201,29 @@ function renderMyTickets(me){
 
 async function renderAdminTickets(){
   if(!A.list) return;
-  let items=[]; try{ items=(await dataGet('/tickets'))||[]; }catch{ items=TStore.open(); }
-  items = items.filter(t=>t.status==='open').sort((a,b)=>b.ts-a.ts);
+  await syncTicketsFromServer();
+  let items=TStore.open();
   if(items.length===0){ A.list.textContent='No open tickets.'; return; }
   A.list.textContent='';
   items.forEach(t=>{ A.list.appendChild(ticketItemEl(t,{adminView:true})); });
 }
 
-function renderClosedTickets(){
+async function renderClosedTickets(){
   if(!A.closedList) return;
+  await syncTicketsFromServer();
   const items=TStore.closed();
   if(items.length===0){ A.closedList.textContent='No closed tickets.'; return; }
   A.closedList.textContent='';
   items.forEach(t=>{ A.closedList.appendChild(ticketItemEl(t,{adminView:true})); });
 }
 
-function openTicketChat(id,isAdmin){
-  const t=TStore.all().find(x=>x.id===id); if(!t||!TC.modal) return;
+async function getTicketById(id){
+  let t=TStore.all().find(x=>x.id===id);
+  if(!t){ await syncTicketsFromServer(); t=TStore.all().find(x=>x.id===id); }
+  return t;
+}
+async function openTicketChat(id,isAdmin){
+  const t=await getTicketById(id); if(!t||!TC.modal) return;
   TC.currentId=t.id;
   TC.title.textContent=`Ticket #${t.no} • ${t.type}`;
   TC.list.textContent='';
