@@ -16,8 +16,8 @@ export default {
     const method = request.method.toUpperCase();
     if (method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env) });
 
-    // Data API: /gallery, /news, /admins, /tickets, /dm
-    if (path === '/gallery' || path === '/news' || path.startsWith('/gallery/') || path === '/admins' || path.startsWith('/tickets') || path === '/dm') {
+    // Data API: /gallery, /news, /admins, /tickets, /dm, /owner/announce, /revive, /giveaway/create, /giveaways
+    if (path === '/gallery' || path === '/news' || path.startsWith('/gallery/') || path === '/admins' || path.startsWith('/tickets') || path === '/dm' || path === '/owner/announce' || path === '/revive' || path === '/giveaway/create' || path === '/giveaways') {
       try {
         if (method === 'GET' && (path === '/gallery' || path === '/news')) {
           const arr = await kvGetArray(env, path === '/gallery' ? 'gallery' : 'news');
@@ -145,6 +145,29 @@ export default {
             if(!msgRes.ok){ const txt=await msgRes.text().catch(()=>'' ); return json({ ok:false, error:'dm_send_failed', details:txt }, env, 502); }
             return json({ ok:true }, env);
           }catch(e){ return json({ ok:false, error:'dm_error', message:e.message }, env, 500); }
+        }
+
+        // Giveaway create
+        if (path === '/giveaway/create' && method === 'POST') {
+          try{
+            if(!env.BOT_TOKEN) return json({ ok:false, error:'missing_bot_token' }, env, 400);
+            const { channelId, head, body, footerIcon, durationMin=60, winners=1, by } = await request.json();
+            if(!channelId || !head || !body) return json({ ok:false, error:'missing_params' }, env, 400);
+            const endsAt = Date.now() + Number(durationMin)*60*1000;
+            const embed = { title: head, description: `${body}\n\n⏳ Končí: <t:${Math.floor(endsAt/1000)}:R>\n🎁 Výherci: ${winners}`, color: 0xffa500, timestamp: new Date().toISOString(), footer: { text: by? `by ${by}` : 'Giveaway', icon_url: footerIcon||undefined } };
+            const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`,{ method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bot ${env.BOT_TOKEN}` }, body: JSON.stringify({ embeds:[embed], content:'🎉 Giveaway zahájen!' }) });
+            if(!r.ok){ const txt=await r.text().catch(()=>'' ); return json({ ok:false, error:'gw_post_failed', details:txt }, env, 502); }
+            const msg = await r.json();
+            // save giveaway
+            const g = { id: `gw_${Date.now()}`, channelId, messageId: msg.id, head, body, footerIcon: footerIcon||'', winners: Number(winners), createdAt: Date.now(), endsAt, by: by||'', participants: [] };
+            const all = await kvGetArray(env, 'giveaways'); all.push(g); await kvPutArray(env, 'giveaways', all);
+            return json({ ok:true, giveaway: g }, env);
+          }catch(e){ return json({ ok:false, error:'gw_create_error', message:e.message }, env, 500); }
+        }
+        // Giveaway list
+        if (path === '/giveaways' && method === 'GET'){
+          try{ const all = await kvGetArray(env, 'giveaways'); return json({ ok:true, items: all.slice().reverse() }, env); }
+          catch(e){ return json({ ok:false, error:'gw_list_error', message:e.message }, env, 500); }
         }
 
         if (path === '/tickets' && method === 'DELETE') {
