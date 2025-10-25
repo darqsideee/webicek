@@ -145,8 +145,13 @@ function startAdminTimer(){
   if(__adminTimer) clearInterval(__adminTimer);
   __adminStart=Date.now();
   const tick=()=>{
-    const m=Math.floor((Date.now()-__adminStart)/60000);
+    const prev=Number(localStorage.getItem('ns_admin_time_total')||'0');
+    const elapsed=Date.now()-__adminStart;
+    const totalMs=prev+elapsed;
+    const m=Math.floor(totalMs/60000);
     A.timer.textContent=`${m}m`;
+    // store cumulative every tick
+    localStorage.setItem('ns_admin_time_total',String(totalMs));
   };
   tick();
   __adminTimer=setInterval(tick,15000);
@@ -288,7 +293,7 @@ async function renderGallery(){
     // delete if owner or staff
     const canDel = (STATE.current && (STATE.current.id===it.uploaderId)) || STATE.isGalleryAdmin;
     if(canDel){
-      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat'; del.style.marginTop='6px';
+      const del=document.createElement('button'); del.className='btn btn-muted'; del.textContent='Smazat'; del.style.marginTop='6px';
       del.addEventListener('click',()=>{ deleteGallery(it.id); });
       card.appendChild(del);
     }
@@ -311,7 +316,11 @@ async function addGallery(image,caption,user){
   renderGallery();
   renderAdminGalleryPending();
 }
-function deleteGallery(id){ const items=store.get('ns_gallery',[]).filter(x=>x.id!==id); store.set('ns_gallery',items); renderGallery(); }
+async function deleteGallery(id){
+  try{ await dataPost('/gallery/delete',{id}); }
+  catch{ const items=store.get('ns_gallery',[]).filter(x=>x.id!==id); store.set('ns_gallery',items); }
+  renderGallery(); renderAdminGalleryPending();
+}
 function approveGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.approved=true;} store.set('ns_gallery',items); renderGallery(); renderAdminGalleryPending(); }
 function togglePromoteGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.promoted=!it.promoted;} store.set('ns_gallery',items); renderGallery(); renderHomePromoted(); }
 
@@ -604,7 +613,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     }catch{}
   }
   // If staff detected by roles, ensure staff UI is visible
-  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); renderAdminTickets(); A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); if(A.logs){ A.logs.classList.remove('hidden'); renderGalleryLogs(); } }
+  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); renderAdminTickets(); A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); if(A.logs){ A.logs.classList.remove('hidden'); renderGalleryLogs(); } }
   showDashboard(true);
  }catch(e){
    setHeaderLoggedIn(null);
@@ -621,6 +630,16 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   renderHomePromoted();
   renderHomeNews();
   STATE.canOpenTickets=true; applyTicketGate();
+  // 15s role polling to refresh admin UI and lists
+  setInterval(async ()=>{
+    try{
+      const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
+      const wasStaff=STATE.isStaff;
+      STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
+      if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); A.galAllow?.classList.remove('hidden'); A.logs?.classList.remove('hidden'); renderAdminTickets(); renderAdminGalleryPending(); renderGalleryLogs(); }
+      else if(wasStaff && !STATE.isStaff){ hide(S.staffNote); hide(S.staffActions); hide(S.newsAdmin); }
+    }catch{}
+  },15000);
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCreate?.addEventListener('click',()=>{
