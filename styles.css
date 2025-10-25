@@ -1,6 +1,7 @@
 :root{--bg:#0a0a0f;--panel:#11111a;--muted:#8b8aa0;--text:#e8e7ff;--accent:#7c3aed;--accent-2:#a78bfa;--accent-3:#6d28d9;--success:#22c55e;--danger:#ef4444}
 *{box-sizing:border-box}
 html,body{height:100%}
+html{scroll-behavior:smooth}
 body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);letter-spacing:.2px;overflow-x:hidden}
 .container{width:min(1100px,92%);margin-inline:auto}
 
@@ -201,12 +202,18 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
   .chat-messages{max-height:60vh}
 }
 
+/* Ensure anchor targets leave space for sticky header */
+section[id]{scroll-margin-top: 84px}
+@media (max-width: 520px){ section[id]{scroll-margin-top: 96px} }
+
 /* Mobile */
 @media (max-width: 520px){
   .title{font-size:clamp(2rem,9vw,3rem)}
   .subtitle{font-size:1rem}
   .btn{padding:10px 12px;min-height:42px}
-  .links{gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Two-row nav links layout */
+  .links{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);column-gap:12px;row-gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .links::-webkit-scrollbar{display:none}
   .grid{grid-template-columns:1fr}
   .gallery-grid{grid-template-columns:1fr}
   .promoted-wrap{grid-template-columns:1fr}
