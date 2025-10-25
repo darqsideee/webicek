@@ -193,23 +193,33 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 @media (max-width: 720px){
   .container{width:min(100%,94%)}
   .nav-inner{flex-wrap:wrap;gap:10px}
-  .links{flex-wrap:wrap;gap:12px}
+  .links{flex-wrap:wrap;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .links::-webkit-scrollbar{display:none}
   .actions{width:100%;justify-content:flex-end}
   .gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .guilds{grid-template-columns:1fr}
+  .chat-messages{max-height:60vh}
 }
 
 /* Mobile */
 @media (max-width: 520px){
   .title{font-size:clamp(2rem,9vw,3rem)}
   .subtitle{font-size:1rem}
-  .btn{padding:10px 12px}
-  .links{gap:10px}
+  .btn{padding:10px 12px;min-height:42px}
+  .links{gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .grid{grid-template-columns:1fr}
   .gallery-grid{grid-template-columns:1fr}
   .promoted-wrap{grid-template-columns:1fr}
   .stats{gap:10px}
   .footer-inner{flex-direction:column;gap:8px}
+  .panel{padding:12px}
+  .guild img{width:30px;height:30px}
+  .chat-messages{max-height:56vh}
+  .chat-actions{flex-wrap:wrap}
+  .chat-actions .btn{flex:1 1 auto}
+  .chat-actions input{min-width:0}
   .modal-card{min-width:96%;max-height:90vh;overflow:auto}
+  #ticket-chat .modal-card{min-width:96%}
   #bg-particles{display:none}
 }
 
