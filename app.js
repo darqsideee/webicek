@@ -1004,3 +1004,45 @@ async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{m
 // Auto-refresh disabled per request
 
 // (music player removed)
+
+// Admin Messager (Web DM) wiring - robust init
+function initMessager(){
+  const wrap=document.querySelector('#dm-modal');
+  const openBtn=document.querySelector('#admin-dm-open');
+  const closeBtn=document.querySelector('#dm-close');
+  const typeEl=document.querySelector('#dm-type');
+  const userEl=document.querySelector('#dm-user');
+  const headEl=document.querySelector('#dm-head');
+  const bodyEl=document.querySelector('#dm-body');
+  const sendBtn=document.querySelector('#dm-send');
+  if(!wrap) return; // modal not in DOM yet
+  const show=(v)=>{ if(v) wrap.classList.remove('hidden'); else wrap.classList.add('hidden'); };
+  // Bind once
+  if(!wrap.__bound){
+    openBtn?.addEventListener('click',()=>{ if(!STATE.isStaff){ alertShow('Pouze pro tým.'); return; } show(true); });
+    closeBtn?.addEventListener('click',()=> show(false));
+    document.querySelector('#dm-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
+    sendBtn?.addEventListener('click', async ()=>{
+      if(!STATE.isStaff){ alertShow('Pouze pro tým.'); return; }
+      const userId=(userEl?.value||'').trim();
+      const type=(typeEl?.value||'info');
+      const head=(headEl?.value||'').trim();
+      const text=(bodyEl?.value||'').trim();
+      if(!userId||!head||!text){ alertShow('Vyplňte Discord ID, nadpis a text.'); return; }
+      try{
+        await dataPost('/dm',{ userId, type, head, body:text, by:(STATE.current?.name||'Staff') });
+        alertShow('Zpráva odeslána.'); show(false);
+        if(userEl) userEl.value=''; if(headEl) headEl.value=''; if(bodyEl) bodyEl.value='';
+      }catch{ alertShow('Odeslání selhalo. Zkontrolujte BOT_TOKEN na serveru.'); }
+    });
+    // Delegated fallback if button is injected later
+    document.addEventListener('click',(e)=>{
+      const t=e.target; if(!(t instanceof HTMLElement)) return;
+      if(t.id==='admin-dm-open'){ e.preventDefault?.(); if(!STATE.isStaff){ alertShow('Pouze pro tým.'); return; } show(true); }
+    });
+    wrap.__bound=true;
+  }
+}
+// Ensure init runs after DOM and when admin UI becomes visible
+document.addEventListener('DOMContentLoaded', initMessager);
+setTimeout(initMessager, 500);
