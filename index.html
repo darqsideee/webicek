@@ -124,15 +124,42 @@
 
     <section id="rules" class="container section">
       <h2 class="section-title">Pravidla</h2>
-      <div class="rules">
-        <ol>
-          <li>Respektujte všechny hráče i tým. Žádné obtěžování nebo nenávistné projevy.</li>
-          <li>Dodržujte pravidla Discordu a serveru. Cheaty a zneužívání jsou zakázány.</li>
-          <li>Udržujte roleplay realistický. Neničte ponoření ostatním.</li>
-          <li>Na podporu používejte tikety. Přiložte podrobnosti a případné důkazy.</li>
-          <li>Rozhodnutí týmu jsou konečná. Odvolání je možné oficiální cestou.</li>
-        </ol>
-        <p class="muted" style="margin-top:10px">Kompletní pravidla najdete na Discordu a mohou se měnit. Kontrolujte je pravidelně.</p>
+      <div class="tabs">
+        <button class="tab active" data-tab="rules-basic">Základní pravidla</button>
+        <button class="tab" data-tab="rules-legal">Legal pravidla</button>
+        <button class="tab" data-tab="rules-illegal">Nelegal pravidla</button>
+      </div>
+      <div class="tab-panels">
+        <div id="rules-basic" class="tab-panel active">
+          <div class="rules">
+            <ol>
+              <li>Respektujte všechny hráče i tým. Žádné obtěžování nebo nenávistné projevy.</li>
+              <li>Dodržujte pravidla Discordu a serveru. Cheaty a zneužívání jsou zakázány.</li>
+              <li>Udržujte roleplay realistický. Neničte ponoření ostatním.</li>
+              <li>Na podporu používejte tikety. Přiložte podrobnosti a případné důkazy.</li>
+              <li>Rozhodnutí týmu jsou konečná. Odvolání je možné oficiální cestou.</li>
+            </ol>
+            <p class="muted" style="margin-top:10px">Kompletní pravidla najdete na Discordu a mohou se měnit. Kontrolujte je pravidelně.</p>
+          </div>
+        </div>
+        <div id="rules-legal" class="tab-panel">
+          <div class="rules">
+            <ol>
+              <li>Dodržujte zákony v rámci RP světa (policie, soudy apod.).</li>
+              <li>Žádné VDM/RDM bez adekvátního důvodu.</li>
+              <li>Respektujte vyjednávání a role autorit.</li>
+            </ol>
+          </div>
+        </div>
+        <div id="rules-illegal" class="tab-panel">
+          <div class="rules">
+            <ol>
+              <li>Nelegální činnosti musí mít smysl a návaznost (heisty, únosy apod.).</li>
+              <li>Powergaming a metagaming je zakázán.</li>
+              <li>Kidnapping a násilí pouze s adekvátní iniciací a důvodem.</li>
+            </ol>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -193,7 +220,7 @@
     <section id="gallery" class="container section">
       <h2 class="section-title">Galerie</h2>
       <div id="gallery-guard" class="muted">Přihlaste se pomocí Discordu na hlavní stránce, abyste mohli přidávat fotografie.</div>
-      <div class="panel" id="gallery-form" class="hidden"><div class="panel-actions"><button class="btn btn-primary" id="gal-upload-open">Nahrát fotku</button></div></div>
+      <div class="panel hidden" id="gallery-form"><div class="panel-actions"><button class="btn btn-primary" id="gal-upload-open">Nahrát fotku</button></div></div>
       <div id="gallery-list" class="gallery-grid"></div>
     </section>
 
