@@ -589,6 +589,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   const adm=await checkAdminRole();
   STATE.current={id:me.id,name:HP.pillName?.textContent||me.username};
   STATE.isStaff=!!adm.isAdmin;
+  try{ const admins=await fetchAdmins(); if(Array.isArray(admins) && admins.includes(me.id)) STATE.isStaff=true; }catch{}
   if(adm.isAdmin){
     show(S.staffNote);
     show(S.staffActions);
@@ -610,6 +611,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[]; 
       STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId);
       STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
+      try{ const admins=await fetchAdmins(); if(Array.isArray(admins) && admins.includes(me.id)) STATE.isStaff=true; }catch{}
     }catch{}
   }
   // If staff detected by roles, ensure staff UI is visible
@@ -639,6 +641,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
       const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
       const wasStaff=STATE.isStaff;
       STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
+      try{ const admins=await fetchAdmins(); if(Array.isArray(admins) && admins.includes(STATE.current?.id)) STATE.isStaff=true; }catch{}
       if(STATE.isStaff){ show(S.staffNote); S.staffActions?.classList.add('hidden'); ensureNavAdminLink(true); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); A.galAllow?.classList.remove('hidden'); A.logs?.classList.remove('hidden'); renderAdminTickets(); renderAdminGalleryPending(); renderGalleryLogs(); }
       else if(wasStaff && !STATE.isStaff){ hide(S.staffNote); ensureNavAdminLink(false); hide(S.newsAdmin); }
     }catch{}
@@ -706,6 +709,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
 }
 
 function openAdmin(){
+  if(!STATE.isStaff){ alertShow('Access denied. Admin only.'); return; }
   location.hash='#admin';
   if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
   startAdminTimer();
@@ -779,6 +783,7 @@ function applyTicketGate(){
 // Worker data API helpers (use same origin as tokenExchangeUrl)
 function baseWorker(){ const u=new URL(cfg.tokenExchangeUrl); u.hash=''; u.search=''; return u.origin; }
 async function dataGet(path){ const r=await fetch(`${baseWorker()}${path}`,{headers:{'Content-Type':'application/json'}}); if(!r.ok) throw new Error('data_get'); return r.json(); }
+async function fetchAdmins(){ try{ return await dataGet('/admins'); }catch{ return store.get('ns_admins',[]); } }
 async function dataPost(path,body){ const r=await fetch(`${baseWorker()}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error('data_post'); return r.json().catch(()=>({ok:true})); }
 async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{method:'DELETE'}); if(!r.ok) throw new Error('data_del'); return true; }
 
