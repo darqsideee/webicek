@@ -1096,7 +1096,10 @@ function setupOwnerUI(){ try{
       if(!channelId || !head || !text){ alertShow('Vyplň kanál, nadpis a text.'); return; }
       try{
         if(type==='giveaway'){
-          await dataPost('/giveaway/create',{ channelId, head, body:text, footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
+          const res = await dataPost('/giveaway/create',{ channelId, head, body:text, footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
+          try{
+            const mid = res?.giveaway?.messageId; if(mid){ const url=`https://discord.com/channels/${cfg.guildId}/${channelId}/${mid}`; window.open(url,'_blank'); }
+          }catch{}
         } else {
           await dataPost('/owner/announce',{ channelId, type, head, body:text, footerIcon, by: STATE.current?.name||'Owner' });
         }
@@ -1104,13 +1107,16 @@ function setupOwnerUI(){ try{
         if(OW.head) OW.head.value=''; if(OW.body) OW.body.value='';
       }catch{ alertShow('Odeslání selhalo. Zkontroluj BOT_TOKEN na serveru.'); }
     });
-    // Show/hide giveaway extra fields by type
+    // Show/hide giveaway extra fields by type and adjust UI
     const durEl=qs('#owner-gw-duration');
     const winEl=qs('#owner-gw-winners');
     const toggleGwFields=()=>{
       const isGw=(OW.type?.value||'normal')==='giveaway';
       try{ durEl?.parentElement && (durEl.parentElement.style.display = isGw? '' : 'none'); }catch{}
       try{ winEl?.parentElement && (winEl.parentElement.style.display = isGw? '' : 'none'); }catch{}
+      if(OW.send) OW.send.textContent = isGw? 'Vytvořit giveaway' : 'Odeslat oznámení';
+      if(OW.head) OW.head.placeholder = isGw? 'Titulek giveaway' : 'Titulek oznámení';
+      if(OW.body) OW.body.placeholder = isGw? 'Text giveaway' : 'Text oznámení';
     };
     OW.type?.addEventListener('change', toggleGwFields);
     toggleGwFields();
