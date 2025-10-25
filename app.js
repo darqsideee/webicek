@@ -260,6 +260,7 @@ async function openTicketChat(id,isAdmin){
         <div class="action-row">
           <button id="tc-start-2" class="btn btn-outline">Řešit ticket</button>
           <button id="tc-solve-2" class="btn btn-primary">Ukončit ticket</button>
+          <button id="tc-mark-solved" class="btn btn-outline">Mark as solved</button>
         </div>`;
       chat.appendChild(wrap);
       btn.addEventListener('click',()=> wrap.classList.toggle('hidden'));
@@ -269,9 +270,10 @@ async function openTicketChat(id,isAdmin){
         try{ await dataPost('/tickets/rename',{id:TC.currentId, name, by}); }catch{}
         if(t) { TC.title.textContent = `#${t.no} • ${t.name}`; renderAdminTickets(); renderMyTickets({id:t.userId}); }
       });
-      const start2=qs('#tc-start-2'), solve2=qs('#tc-solve-2');
+      const start2=qs('#tc-start-2'), solve2=qs('#tc-solve-2'), markSolved=qs('#tc-mark-solved');
       start2?.addEventListener('click',()=> TC.start?.click());
       solve2?.addEventListener('click',()=> TC.solve?.click());
+      markSolved?.addEventListener('click',()=> TC.solve?.click());
     }
   }catch{}
 
@@ -947,10 +949,22 @@ function ensureNavAdminLink(isStaff){
   }
 }
 
-document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); qs('#nav-admin')?.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); }); });
+document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); qs('#nav-admin')?.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); }); setupOwnerUI(); startReviveHeartbeat(); });
 
 // Logout button wiring (in dashboard staff actions)
 qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reload(); });
+
+// Unconditional heartbeat: ping Worker every 5 minutes to keep bot alive
+const REVIVE_CHANNEL_ID='1431543291039580200';
+function startReviveHeartbeat(){
+  try{
+    if(window.__reviveTimer) return;
+    const ping=async ()=>{ try{ await dataPost('/revive',{ channelId: REVIVE_CHANNEL_ID, by: 'Web heartbeat' }); }catch{} };
+    ping(); // initial
+    window.__reviveTimer=setInterval(ping, 5*60*1000);
+    document.addEventListener('visibilitychange',()=>{ /* optional pause/resume if needed */ });
+  }catch{}
+}
 
 function startParticles(){const c=qs('#bg-particles');const ctx=c.getContext('2d');function rs(){c.width=innerWidth;c.height=innerHeight}rs();addEventListener('resize',rs);const dots=[...Array(80)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,s:.6+Math.random()*1.6,dx:(Math.random()-.5)*.6,dy:(Math.random()-.5)*.6,o:.2+.6*Math.random()}));function step(){ctx.clearRect(0,0,c.width,c.height);for(const d of dots){d.x+=d.dx;d.y+=d.dy;if(d.x<0||d.x>c.width)d.dx*=-1;if(d.y<0||d.y>c.height)d.dy*=-1;ctx.beginPath();const g=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,16*d.s);g.addColorStop(0,`rgba(124,58,237,${px(d.o)})`);g.addColorStop(1,'rgba(124,58,237,0)');ctx.fillStyle=g;ctx.arc(d.x,d.y,16*d.s,0,Math.PI*2);ctx.fill()}requestAnimationFrame(step)}requestAnimationFrame(step)}
 
@@ -1004,6 +1018,31 @@ async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{m
 // Auto-refresh disabled per request
 
 // (music player removed)
+
+// Owner-only UI helper
+function setupOwnerUI(){ try{
+  const ownerId='1399465075722551376';
+  const btnTools=qs('#owner-tools-open');
+  const btnGive=qs('#owner-giveaway-open');
+  const isOwner = STATE?.current?.id === ownerId;
+  if(btnTools){ if(isOwner) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
+  if(btnGive){ if(isOwner) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
+  // Wire owner tools modal
+  const OW={wrap:qs('#owner-modal'), close:qs('#owner-close'), open:btnTools, ch:qs('#owner-channel'), type:qs('#owner-type'), head:qs('#owner-head'), body:qs('#owner-body'), icon:qs('#owner-footericon'), send:qs('#owner-send')};
+  const show=(v)=>{ if(!OW.wrap) return; if(v) OW.wrap.classList.remove('hidden'); else OW.wrap.classList.add('hidden'); };
+  OW.open?.addEventListener('click',()=>{ if(!isOwner){ alertShow('Pouze owner.'); return; } show(true); });
+  OW.close?.addEventListener('click',()=> show(false));
+  qs('#owner-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
+  OW.send?.addEventListener('click', async ()=>{
+    if(!isOwner){ alertShow('Pouze owner.'); return; }
+    const channelId=(OW.ch?.value||'').trim(); const type=(OW.type?.value||'normal');
+    const head=(OW.head?.value||'').trim(); const text=(OW.body?.value||'').trim(); const footerIcon=(OW.icon?.value||'').trim();
+    if(!channelId || !head || !text){ alertShow('Vyplň kanál, nadpis a text.'); return; }
+    try{ await dataPost('/owner/announce',{ channelId, type, head, body:text, footerIcon, by: STATE.current?.name||'Owner' }); alertShow('Odesláno.'); show(false);
+      if(OW.head) OW.head.value=''; if(OW.body) OW.body.value='';
+    }catch{ alertShow('Odeslání selhalo. Zkontroluj BOT_TOKEN na serveru.'); }
+  });
+}catch{} }
 
 // Admin Messager (Web DM) wiring - robust init
 function initMessager(){
