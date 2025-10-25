@@ -106,6 +106,7 @@ const TC={
   start:qs('#tc-start'),
   solve:qs('#tc-solve'),
   close:qs('#tc-close'),
+  closeUser:qs('#tc-close-user'),
   file:qs('#tc-file'),
   attach:qs('#tc-attach'),
   currentId:null
@@ -228,6 +229,7 @@ function openTicketChat(id,isAdmin){
   // controls visibility
   if(TC.start) TC.start.style.display = (isAdmin && !t.startedTs && t.status==='open')? 'inline-flex' : 'none';
   if(TC.solve) TC.solve.style.display = (isAdmin && t.status==='open')? 'inline-flex' : 'none';
+  if(TC.closeUser) TC.closeUser.style.display = (!isAdmin && t.status==='open' && STATE.current?.id===t.userId)? 'inline-flex' : 'none';
   if(TC.input) { TC.input.disabled = (t.status==='closed'); TC.input.placeholder = t.status==='closed' ? 'Ticket is closed' : 'Type a message...'; }
   if(TC.send) { TC.send.disabled = (t.status==='closed'); }
   // autoscroll
@@ -682,6 +684,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
   TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
   TC.solve?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
+  TC.closeUser?.addEventListener('click',()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
