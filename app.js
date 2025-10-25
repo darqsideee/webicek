@@ -146,16 +146,12 @@ function startAdminTimer(){
   if(__adminTimer) clearInterval(__adminTimer);
   __adminStart=Date.now();
   const tick=()=>{
-    const prev=Number(localStorage.getItem('ns_admin_time_total')||'0');
     const elapsed=Date.now()-__adminStart;
-    const totalMs=prev+elapsed;
-    const m=Math.floor(totalMs/60000);
+    const m=Math.floor(elapsed/60000);
     A.timer.textContent=`${m}m`;
-    // store cumulative every tick
-    localStorage.setItem('ns_admin_time_total',String(totalMs));
   };
   tick();
-  __adminTimer=setInterval(tick,15000);
+  __adminTimer=setInterval(tick,5000);
 }
 
 function showTicketModal(v){
@@ -175,7 +171,7 @@ function ticketItemEl(t,opts={}){
   wrap.style.cursor='pointer';
   wrap.addEventListener('click',()=> openTicketChat(t.id, !!opts.adminView));
   if(t.status==='closed'){
-    const badge=document.createElement('span'); badge.className='chip'; badge.textContent='Closed'; badge.style.marginLeft='auto';
+    const badge=document.createElement('span'); badge.className='chip'; badge.textContent='Closed'; badge.style.marginLeft='auto'; badge.style.background='#3a2'; badge.style.background='#000'; badge.style.border='1px solid #e11d48'; badge.style.color='#e11d48';
     wrap.appendChild(badge);
   }
   return wrap;
@@ -187,12 +183,22 @@ function renderMyTickets(me){
   const items=TStore.byUser(uid);
   if(items.length===0){ T.history.textContent='No tickets yet.'; return; }
   T.history.textContent='';
-  items.forEach(t=>{ T.history.appendChild(ticketItemEl(t)); });
+  items.forEach(t=>{
+    const row=ticketItemEl(t);
+    if(t.status==='closed'){
+      // allow user to delete from history
+      const del=document.createElement('button'); del.className='btn btn-ghost'; del.textContent='Smazat z historie'; del.style.marginLeft='8px';
+      del.addEventListener('click',async (e)=>{ e.stopPropagation(); try{ await dataDelete(`/tickets?id=${encodeURIComponent(t.id)}`); }catch{} const v=TStore.all().filter(x=>x.id!==t.id); TStore.save(v); renderMyTickets({id:uid}); });
+      row.appendChild(del);
+    }
+    T.history.appendChild(row);
+  });
 }
 
-function renderAdminTickets(){
+async function renderAdminTickets(){
   if(!A.list) return;
-  const items=TStore.open();
+  let items=[]; try{ items=(await dataGet('/tickets'))||[]; }catch{ items=TStore.open(); }
+  items = items.filter(t=>t.status==='open').sort((a,b)=>b.ts-a.ts);
   if(items.length===0){ A.list.textContent='No open tickets.'; return; }
   A.list.textContent='';
   items.forEach(t=>{ A.list.appendChild(ticketItemEl(t,{adminView:true})); });
@@ -653,18 +659,20 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   T.mCreate?.addEventListener('click',()=>{
     const type=T.mType.value; const reason=T.mReason.value.trim(); if(!reason) {T.mReason.focus(); return}
     let img=null; const f=T.mImage.files?.[0];
-    if(f){ const reader=new FileReader(); reader.onload=()=>{ img=reader.result; const t=TStore.create({userId:qs('#user-id').textContent.replace('ID ','')||'me', user:HP.pillName?.textContent||'User', type, reason, image:img}); showTicketModal(false); renderMyTickets({id:t.userId}); renderAdminTickets(); }; reader.readAsDataURL(f); }
-    else { const t=TStore.create({userId:qs('#user-id').textContent.replace('ID ','')||'me', user:HP.pillName?.textContent||'User', type, reason, image:null}); showTicketModal(false); renderMyTickets({id:t.userId}); renderAdminTickets(); }
+    const finish=async (t)=>{ try{ await dataPost('/tickets',t); }catch{} showTicketModal(false); renderMyTickets({id:t.userId}); renderAdminTickets(); };
+    if(f){ const reader=new FileReader(); reader.onload=()=>{ img=reader.result; const t=TStore.create({userId:qs('#user-id').textContent.replace('ID ','')||'me', user:HP.pillName?.textContent||'User', type, reason, image:img}); finish(t); }; reader.readAsDataURL(f); }
+    else { const t=TStore.create({userId:qs('#user-id').textContent.replace('ID ','')||'me', user:HP.pillName?.textContent||'User', type, reason, image:null}); finish(t); }
   });
   // Render initial tickets
   try{ const me=await apiGet('/users/@me'); renderMyTickets(me);}catch{}
   renderAdminTickets();
   // Ticket chat controls
   TC.close?.addEventListener('click',closeTicketChat);
-  TC.send?.addEventListener('click',()=>{
+  TC.send?.addEventListener('click',async ()=>{
     if(!TC.currentId) return; const txt=TC.input.value.trim(); if(!txt) return;
     const by=HP.pillName?.textContent||'User'; const byId=STATE.current?.id||'me';
     TStore.addMsg(TC.currentId,by,byId,STATE.isStaff?'staff':'user',txt,null);
+    try{ await dataPost('/tickets/message',{id:TC.currentId, by, byId, role: (STATE.isStaff?'staff':'user'), text:txt}); }catch{}
     openTicketChat(TC.currentId,STATE.isStaff); // re-render
     TC.input.value=''; TC.input.focus();
     try{ TC.list.scrollTop = TC.list.scrollHeight; }catch{}
@@ -673,18 +681,19 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   TC.attach?.addEventListener('click',()=> TC.file?.click());
   TC.file?.addEventListener('change',(e)=>{
     if(!TC.currentId) return; const f=e.target.files?.[0]; if(!f) return;
-    const reader=new FileReader(); reader.onload=()=>{
+    const reader=new FileReader(); reader.onload=async ()=>{
       const by=HP.pillName?.textContent||'User'; const byId=STATE.current?.id||'me';
       const txt=TC.input.value.trim();
       TStore.addMsg(TC.currentId,by,byId,STATE.isStaff?'staff':'user',txt,reader.result);
+      try{ await dataPost('/tickets/message',{id:TC.currentId, by, byId, role:(STATE.isStaff?'staff':'user'), text:txt, image:reader.result}); }catch{}
       TC.input.value=''; openTicketChat(TC.currentId,STATE.isStaff);
     }; reader.readAsDataURL(f);
     e.target.value='';
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
   TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
-  TC.solve?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
-  TC.closeUser?.addEventListener('click',()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
+  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
+  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
@@ -693,6 +702,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Ticket modal close
   qs('#ticket-close')?.addEventListener('click',()=>showTicketModal(false));
   qs('#ticket-modal .modal-backdrop')?.addEventListener('click',()=>showTicketModal(false));
+  // Admin tickets refresh
+  qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
   
   // Gallery upload modal wiring
   const gm={wrap:qs('#gal-modal'), open:qs('#gal-upload-open'), close:qs('#gal-close'), file:qs('#gm-file'), url:qs('#gm-image'), cap:qs('#gm-caption'), add:qs('#gm-add')};
