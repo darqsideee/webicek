@@ -494,7 +494,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     renderGallery();
     renderNews();
     renderHomeNews();
-    startPlayerAutoRefresh(true);
+    startPartialAutoRefresh();
     // Tickets for logged-out cannot create
     return;
   }
@@ -649,9 +649,14 @@ function applyTicketGate(){
   else { btn.disabled=true; btn.classList.add('disabled'); }
 }
 
-// Auto refresh every 5s for non-staff (and logged-out)
-let REFRESH_TIMER=null;
-function startPlayerAutoRefresh(enable){
-  if(REFRESH_TIMER){ clearInterval(REFRESH_TIMER); REFRESH_TIMER=null; }
-  if(enable){ REFRESH_TIMER=setInterval(()=>{ location.reload(); },5000); }
+// Targeted auto refresh every 5s for News, Home feature, Gallery, and Active Tickets
+let PARTIAL_TIMER=null;
+function startPartialAutoRefresh(){
+  if(PARTIAL_TIMER){ clearInterval(PARTIAL_TIMER); PARTIAL_TIMER=null; }
+  PARTIAL_TIMER=setInterval(()=>{
+    try{ renderNews(STATE.newsPage||1); }catch{}
+    try{ renderHomeNews(); }catch{}
+    try{ renderGallery(); }catch{}
+    try{ if(typeof renderAdminTickets==='function') renderAdminTickets(); }catch{}
+  },5000);
 }
