@@ -705,8 +705,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
   TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
-  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
-  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
+  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderAdminTickets(); renderClosedTickets(); });
+  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
@@ -718,6 +718,39 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Admin tickets refresh
   qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
   qs('#ad-closed-refresh')?.addEventListener('click',()=>{ renderClosedTickets(); });
+  // Cleaner modal wiring
+  const CL={wrap:qs('#cleaner-modal'), open:qs('#admin-cleaner-open'), close:qs('#cleaner-close'), tabGal:qs('#cleaner-tab-gallery'), tabNews:qs('#cleaner-tab-news'), listGal:qs('#cleaner-gallery'), listNews:qs('#cleaner-news')};
+  const showCleaner=(v)=>{ if(!CL.wrap) return; if(v) CL.wrap.classList.remove('hidden'); else CL.wrap.classList.add('hidden'); };
+  const switchTab=(t)=>{ if(!CL.wrap) return; if(t==='gal'){ CL.listGal.classList.remove('hidden'); CL.listNews.classList.add('hidden'); CL.tabGal.classList.add('btn'); CL.tabNews.classList.add('btn-outline'); CL.tabNews.classList.remove('btn'); } else { CL.listNews.classList.remove('hidden'); CL.listGal.classList.add('hidden'); CL.tabNews.classList.add('btn'); CL.tabGal.classList.add('btn-outline'); CL.tabGal.classList.remove('btn'); } };
+  const loadCleanerGallery=async ()=>{
+    if(!CL.listGal) return; CL.listGal.textContent='Načítám...';
+    let items=[]; try{ items=await dataGet('/gallery'); }catch{ items=store.get('ns_gallery',[]) }
+    CL.listGal.textContent=''; if(!items.length){ CL.listGal.textContent='Žádné fotky.'; return; }
+    items.slice().reverse().forEach(it=>{
+      const row=document.createElement('div'); row.className='guild';
+      const img=document.createElement('img'); img.src=it.image; img.alt=''; img.style.width='46px'; img.style.height='46px'; img.style.borderRadius='8px';
+      const meta=document.createElement('div'); meta.innerHTML=`<div class="g-name">${it.caption||'Untitled'}</div><div class="g-id">by ${it.user||''}</div>`;
+      const del=document.createElement('button'); del.className='btn btn-muted'; del.textContent='Smazat'; del.style.marginLeft='auto';
+      del.addEventListener('click',async ()=>{ try{ await dataPost('/gallery/delete',{id:it.id}); }catch{ deleteGallery(it.id); } await loadCleanerGallery(); renderGallery(); renderAdminGalleryPending(); });
+      row.appendChild(img); row.appendChild(meta); row.appendChild(del); CL.listGal.appendChild(row);
+    });
+  };
+  const loadCleanerNews=async ()=>{
+    if(!CL.listNews) return; CL.listNews.textContent='Načítám...';
+    let items=[]; try{ items=await dataGet('/news'); }catch{ items=store.get('ns_news',[]) }
+    items=(items||[]).slice().reverse(); CL.listNews.textContent=''; if(!items.length){ CL.listNews.textContent='Žádné novinky.'; return; }
+    items.forEach(n=>{
+      const row=document.createElement('div'); row.className='guild';
+      const meta=document.createElement('div'); meta.innerHTML=`<div class="g-name">${n.head}</div><div class="g-id">${new Date(n.ts).toLocaleString()}</div>`;
+      const del=document.createElement('button'); del.className='btn btn-muted'; del.textContent='Smazat'; del.style.marginLeft='auto';
+      del.addEventListener('click',async ()=>{ await deleteNews(n.ts); await loadCleanerNews(); });
+      row.appendChild(meta); row.appendChild(del); CL.listNews.appendChild(row);
+    });
+  };
+  CL.open?.addEventListener('click',async ()=>{ showCleaner(true); switchTab('gal'); await loadCleanerGallery(); });
+  CL.close?.addEventListener('click',()=> showCleaner(false));
+  CL.tabGal?.addEventListener('click',async ()=>{ switchTab('gal'); await loadCleanerGallery(); });
+  CL.tabNews?.addEventListener('click',async ()=>{ switchTab('news'); await loadCleanerNews(); });
   
   // Gallery upload modal wiring
   const gm={wrap:qs('#gal-modal'), open:qs('#gal-upload-open'), close:qs('#gal-close'), file:qs('#gm-file'), url:qs('#gm-image'), cap:qs('#gm-caption'), add:qs('#gm-add')};
