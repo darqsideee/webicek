@@ -223,6 +223,7 @@ async function getTicketById(id){
   if(!t){ await syncTicketsFromServer(); t=TStore.all().find(x=>x.id===id); }
   return t;
 }
+let __chatPoll=null, __lastMsgCount=0;
 async function openTicketChat(id,isAdmin){
   const t=await getTicketById(id); if(!t||!TC.modal) return;
   TC.currentId=t.id;
@@ -243,6 +244,7 @@ async function openTicketChat(id,isAdmin){
     }
     b.appendChild(meta); row.appendChild(b); TC.list.appendChild(row);
   });
+  __lastMsgCount=(t.messages||[]).length;
   // controls visibility
   if(TC.start) TC.start.style.display = (isAdmin && !t.startedTs && t.status==='open')? 'inline-flex' : 'none';
   if(TC.solve) TC.solve.style.display = (isAdmin && t.status==='open')? 'inline-flex' : 'none';
@@ -252,9 +254,16 @@ async function openTicketChat(id,isAdmin){
   // autoscroll
   try{ TC.list.scrollTop = TC.list.scrollHeight; }catch{}
   TC.modal.classList.remove('hidden');
+  // start realtime-ish polling
+  if(__chatPoll) clearInterval(__chatPoll);
+  __chatPoll=setInterval(async ()=>{
+    const cur=await getTicketById(TC.currentId); if(!cur) return;
+    const count=(cur.messages||[]).length;
+    if(count!==__lastMsgCount){ __lastMsgCount=count; openTicketChat(TC.currentId,isAdmin); }
+  }, 3000);
 }
 
-function closeTicketChat(){ TC.modal?.classList.add('hidden'); TC.currentId=null; TC.input.value=''; }
+function closeTicketChat(){ TC.modal?.classList.add('hidden'); TC.currentId=null; TC.input.value=''; if(__chatPoll) { clearInterval(__chatPoll); __chatPoll=null; } }
 
 
 function wireRulesTabs(){
@@ -378,20 +387,36 @@ async function renderHomePromoted(){
   });
 }
 
-// Gallery logs (admin)
-async function renderGalleryLogs(){
+// Admin logs (server, paginated)
+async function renderAdminLogs(page=1){
   if(!A.logsList) return;
-  let logs=[]; try{ logs=await dataGet('/gallery/logs'); }catch{ logs=store.get('ns_gal_logs',[]) }
-  if(!logs.length){ A.logsList.textContent='Žádné logy.'; return; }
+  A.logsList.textContent='Načítám logy...';
+  let resp; try{ resp=await dataGet(`/admin/logs?page=${encodeURIComponent(String(page))}&size=7`); }catch{ resp=null }
+  if(!resp || !Array.isArray(resp.items) || resp.items.length===0){ A.logsList.textContent='Žádné logy.'; return; }
+  const { items, pages } = resp;
   A.logsList.textContent='';
-  logs.slice().reverse().forEach(l=>{
+  items.forEach(l=>{
     const row=document.createElement('div'); row.className='guild'; row.style.cursor='pointer';
-    row.innerHTML=`<div class="g-name">${l.action==='approve'?'Povoleno':'Smazáno'} • ${new Date(l.ts).toLocaleString()}</div><div class="g-id">${l.caption||''} • ${l.user||''}</div>`;
-    row.addEventListener('click',()=>{ if(l.image) openLightbox(l.image,l.caption||'',l.user||''); });
+    if(l.type==='ticket_closed'){
+      row.innerHTML=`<div class="g-name">Ticket uzavřen • #${l.no||'?'} • ${new Date(l.ts).toLocaleString()}</div><div class="g-id">${l.user||''} • ${l.by||''} • ${l.reason||''}</div>`;
+      row.addEventListener('click',()=>{ alert('Ticket #' + (l.no||'?') + '\nUživatel: ' + (l.user||'') + '\nUzavřel: ' + (l.by||'') + '\nDůvod: ' + (l.reason||'') ); });
+    } else if(l.type==='news_deleted'){
+      row.innerHTML=`<div class="g-name">Novinka smazána • ${new Date(l.ts).toLocaleString()}</div><div class="g-id">${(l.head||'').slice(0,60)}</div>`;
+      row.addEventListener('click',()=>{ if(l.image){ openLightbox(l.image,l.head||'',l.user||''); } alert('Nadpis: '+(l.head||'')+'\nAutor: '+(l.user||'')+'\n\nText:\n'+(l.body||'')); });
+    } else {
+      row.innerHTML=`<div class="g-name">${l.type||'Log'} • ${new Date(l.ts).toLocaleString()}</div>`;
+    }
     A.logsList.appendChild(row);
   });
+  // pager under list
+  const pager=document.createElement('div'); pager.className='pager';
+  const prev=document.createElement('button'); prev.className='btn btn-outline'; prev.textContent='Předchozí'; prev.disabled=page<=1; prev.addEventListener('click',()=>renderAdminLogs(page-1));
+  const next=document.createElement('button'); next.className='btn btn-outline'; next.textContent='Další'; next.disabled=page>=pages; next.addEventListener('click',()=>renderAdminLogs(page+1));
+  const info=document.createElement('span'); info.className='muted'; info.style.margin='0 8px'; info.textContent=`Strana ${page}/${pages}`;
+  pager.appendChild(prev); pager.appendChild(info); pager.appendChild(next);
+  A.logsList.appendChild(pager);
 }
-function addGalLog(action,it){ const logs=store.get('ns_gal_logs',[]); logs.push({action, image:it.image, caption:it.caption, user:it.user, ts:Date.now()}); store.set('ns_gal_logs',logs); renderGalleryLogs(); }
+// keep gallery local logs feature for offline fallback removed; now using server logs
 
 function parseNewsBody(src){
   const lines=src.split(/\r?\n/);
@@ -705,8 +730,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
   TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
-  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderAdminTickets(); renderClosedTickets(); });
-  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
+  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
+  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
@@ -718,6 +743,15 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Admin tickets refresh
   qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
   qs('#ad-closed-refresh')?.addEventListener('click',()=>{ renderClosedTickets(); });
+  // Live refresh Gallery/News for open users
+  let __galPoll=null, __newsPoll=null;
+  const startLiveRefresh=()=>{
+    if(!__galPoll){ __galPoll=setInterval(()=>{ try{ renderGallery(); renderAdminGalleryPending(); }catch{} }, 10000); }
+    if(!__newsPoll){ __newsPoll=setInterval(()=>{ try{ renderNews(STATE.newsPage||1); }catch{} }, 12000); }
+  };
+  const stopLiveRefresh=()=>{ if(__galPoll){ clearInterval(__galPoll); __galPoll=null; } if(__newsPoll){ clearInterval(__newsPoll); __newsPoll=null; } };
+  startLiveRefresh();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') stopLiveRefresh(); else startLiveRefresh(); });
   // Cleaner modal wiring
   const CL={wrap:qs('#cleaner-modal'), open:qs('#admin-cleaner-open'), close:qs('#cleaner-close'), tabGal:qs('#cleaner-tab-gallery'), tabNews:qs('#cleaner-tab-news'), listGal:qs('#cleaner-gallery'), listNews:qs('#cleaner-news')};
   const showCleaner=(v)=>{ if(!CL.wrap) return; if(v) CL.wrap.classList.remove('hidden'); else CL.wrap.classList.add('hidden'); };
