@@ -148,6 +148,25 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 .modal-title{font-weight:800;margin-bottom:10px}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
 
+/* Dark modals (Messager, Owner, Giveaway) */
+#dm-modal .modal-backdrop, #owner-modal .modal-backdrop, #giveaway-modal .modal-backdrop{background:rgba(0,0,0,.8)}
+#dm-modal .modal-card, #owner-modal .modal-card, #giveaway-modal .modal-card{background:#0a0a0f;border:1px solid rgba(124,58,237,.25);box-shadow:0 16px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03)}
+#dm-modal .modal-title, #owner-modal .modal-title, #giveaway-modal .modal-title{color:#fff;text-shadow:0 0 10px rgba(124,58,237,.6)}
+
+/* Inputs in admin actions: cleaner focus/hover */
+.admin-actions input, .admin-actions select, .admin-actions textarea{background:#0b0b12;border:1px solid rgba(124,58,237,.28);color:var(--text);padding:10px 12px;border-radius:12px;outline:none;transition:border-color .15s, box-shadow .15s}
+.admin-actions input::placeholder, .admin-actions textarea::placeholder{color:#6b6a80}
+.admin-actions input:focus, .admin-actions select:focus, .admin-actions textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.18)}
+.admin-actions select{appearance:none;background-image:linear-gradient(45deg,transparent 50%, var(--accent) 50%), linear-gradient(135deg, var(--accent) 50%, transparent 50%);background-position:calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);background-size:5px 5px, 5px 5px;background-repeat:no-repeat;padding-right:28px}
+.admin-actions label.muted{font-weight:600;color:#9a98b5}
+
+/* Buttons refinements */
+.btn-outline:hover{border-color:var(--accent); box-shadow:0 6px 22px rgba(124,58,237,.25)}
+.btn-ghost:hover{border-color:var(--accent);}
+
+/* Messager specifics */
+#dm-modal .admin-actions .form-actions{border-top:1px solid rgba(124,58,237,.18);padding-top:10px}
+
 /* Ticket & forms */
 .ticket-form .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ticket-form label{display:block;margin-bottom:6px;color:var(--muted)}
