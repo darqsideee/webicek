@@ -164,6 +164,23 @@ export default {
             return json({ ok:true, giveaway: g }, env);
           }catch(e){ return json({ ok:false, error:'gw_create_error', message:e.message }, env, 500); }
         }
+
+        // Owner announce (normal/info)
+        if (path === '/owner/announce' && method === 'POST') {
+          try{
+            if(!env.BOT_TOKEN) return json({ ok:false, error:'missing_bot_token' }, env, 400);
+            const { channelId, type='normal', head, body, footerIcon, by } = await request.json();
+            if(!channelId || !head || !body) return json({ ok:false, error:'missing_params' }, env, 400);
+            const color = type==='warn' ? 0xff0000 : 0x7c3aed;
+            const embed = { title: head, description: body, color, timestamp: new Date().toISOString(), footer: { text: by? `by ${by}` : 'Announcement', icon_url: footerIcon||undefined } };
+            const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`,{
+              method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bot ${env.BOT_TOKEN}` },
+              body: JSON.stringify({ embeds:[embed] })
+            });
+            if(!r.ok){ const txt=await r.text().catch(()=>'' ); return json({ ok:false, error:'announce_failed', details:txt }, env, 502); }
+            return json({ ok:true }, env);
+          }catch(e){ return json({ ok:false, error:'announce_error', message:e.message }, env, 500); }
+        }
         // Giveaway list
         if (path === '/giveaways' && method === 'GET'){
           try{ const all = await kvGetArray(env, 'giveaways'); return json({ ok:true, items: all.slice().reverse() }, env); }
