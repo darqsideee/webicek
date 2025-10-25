@@ -209,13 +209,23 @@ async function renderAdminTickets(){
   // clicking any item already opens chat via ticketItemEl -> openTicketChat(..., true)
 }
 
-async function renderClosedTickets(){
+async function renderClosedTickets(page){
   if(!A.closedList) return;
   await syncTicketsFromServer();
-  const items=TStore.closed();
-  if(items.length===0){ A.closedList.textContent='No closed tickets.'; return; }
+  const all=TStore.closed();
+  if(!all.length){ A.closedList.textContent='No closed tickets.'; return; }
+  const size=7; A.closedPage = page || A.closedPage || 1; const pages = Math.max(1, Math.ceil(all.length/size));
+  if(A.closedPage>pages) A.closedPage=pages; if(A.closedPage<1) A.closedPage=1;
+  const start=(A.closedPage-1)*size; const items=all.slice(start,start+size);
   A.closedList.textContent='';
   items.forEach(t=>{ A.closedList.appendChild(ticketItemEl(t,{adminView:true})); });
+  // pager
+  const pager=document.createElement('div'); pager.className='pager'; pager.style.marginTop='8px';
+  const prev=document.createElement('button'); prev.className='btn btn-outline'; prev.textContent='Předchozí'; prev.disabled=A.closedPage<=1; prev.addEventListener('click',()=>renderClosedTickets(A.closedPage-1));
+  const next=document.createElement('button'); next.className='btn btn-outline'; next.textContent='Další'; next.disabled=A.closedPage>=pages; next.addEventListener('click',()=>renderClosedTickets(A.closedPage+1));
+  const info=document.createElement('span'); info.className='muted'; info.style.margin='0 8px'; info.textContent=`Strana ${A.closedPage}/${pages}`;
+  const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.alignItems='center'; wrap.style.justifyContent='center'; wrap.appendChild(prev); wrap.appendChild(info); wrap.appendChild(next);
+  A.closedList.appendChild(wrap);
 }
 
 async function getTicketById(id){
@@ -729,7 +739,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     e.target.value='';
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
-  TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
+  TC.start?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/start',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,true); renderAdminTickets(); });
   TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
   TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
   // Admin actions require reasons (placeholder enable rules)
