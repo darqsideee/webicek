@@ -593,7 +593,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     show(S.staffNote);
     show(S.staffActions);
     show(S.newsAdmin);
-    S.btnOpenAdmin?.addEventListener('click',()=>{ location.hash='#admin'; startAdminTimer(); renderAdminTickets(); renderAdminGalleryPending(); if(STATE.canSeeLogs) renderGalleryLogs(); });
+    // bind handled globally below via openAdmin()
     // Admin page gate
     if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
     try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
@@ -639,7 +639,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
       if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); A.galAllow?.classList.remove('hidden'); A.logs?.classList.remove('hidden'); renderAdminTickets(); renderAdminGalleryPending(); renderGalleryLogs(); }
       else if(wasStaff && !STATE.isStaff){ hide(S.staffNote); hide(S.staffActions); hide(S.newsAdmin); }
     }catch{}
-  },15000);
+  },5000);
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCreate?.addEventListener('click',()=>{
@@ -702,7 +702,16 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   nm.add?.addEventListener('click',()=>{ const image=(nm.img?.value||'').trim(); const head=(nm.head?.value||'').trim(); const body=(nm.body?.value||'').trim(); if(!head||!body) return; addNews(image,head,body,HP.pillName?.textContent||'Staff'); nm.img.value=''; nm.head.value=''; nm.body.value=''; nm.wrap?.classList.add('hidden'); });
 }
 
-document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); });
+function openAdmin(){
+  location.hash='#admin';
+  if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
+  startAdminTimer();
+  renderAdminTickets();
+  renderAdminGalleryPending();
+  if(STATE.isStaff || STATE.canSeeLogs) renderGalleryLogs();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); qs('#btn-open-admin')?.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); }); });
 
 // Logout button wiring (in dashboard staff actions)
 qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reload(); });
