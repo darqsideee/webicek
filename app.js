@@ -10,7 +10,8 @@ const cfg={
   galleryAdminRoleId:"1399465429516161024",
   ticketOpenRoleId:"1410635979340910694",
   tokenExchangeUrl:"https://pepa.darqsideee.workers.dev/", // Cloudflare Worker endpoint
-  api:"https://discord.com/api"
+  api:"https://discord.com/api",
+  ownerIds : "1051222395417014282"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
 const qsa=(sel,root=document)=>[...root.querySelectorAll(sel)];
