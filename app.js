@@ -136,7 +136,7 @@ const TStore={
   open(){return this.all().filter(t=>t.status==='open').sort((a,b)=>b.ts-a.ts)},
   closed(){return this.all().filter(t=>t.status==='closed').sort((a,b)=>b.solvedTs-a.solvedTs)},
   close(id,by){const v=this.all(); const t=v.find(x=>x.id===id); if(t){t.status='closed'; t.solvedTs=Date.now(); t.solvedBy=by||'Staff'; (t.messages||(t.messages=[])).push({by:'system',text:`Solved by ${t.solvedBy}`,ts:Date.now()}); this.save(v);} return t},
-  start(id,by){const v=this.all(); const t=v.find(x=>x.id===id); if(t && !t.startedTs){ t.startedTs=Date.now(); t.startedBy=by||'Staff'; (t.messages||(t.messages=[])).push({by:'system',text:`${t.startedBy} started solving`,ts:Date.now()}); this.save(v);} return t},
+  start(id,by,byId){const v=this.all(); const t=v.find(x=>x.id===id); if(t && !t.startedTs){ t.startedTs=Date.now(); t.startedBy=by||'Staff'; t.startedById=byId||null; (t.messages||(t.messages=[])).push({by:'system',text:`${t.startedBy} started solving`,ts:Date.now()}); this.save(v);} return t},
   addMsg(id,byName,byId,role,text,image){const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return; (t.messages||(t.messages=[])).push({by:byName, byId, role, text, image:image||null, ts:Date.now()}); this.save(v); return t},
   rename(id,name,by){ const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return null; t.name=String(name).slice(0,80); (t.messages||(t.messages=[])).push({by:'system',text:`Ticket renamed to '${t.name}' by ${by||'Staff'}`,ts:Date.now()}); this.save(v); return t }
 };
@@ -242,6 +242,39 @@ async function openTicketChat(id,isAdmin){
   const label = t.name ? t.name : t.type; const closedTag = (t.status==='closed') ? '' : '';
   TC.title.textContent = `#${t.no} • ${label}`;
   TC.list.textContent='';
+  // ensure 'Ostatní' tools exist for staff when opening chat
+  try{
+    const chat=qs('#ticket-chat .chat');
+    const actions=qs('#ticket-chat .chat-actions');
+    const existing=qs('#tc-more');
+    if(chat && actions && !existing && STATE.isStaff){
+      const moreBar=document.createElement('div'); moreBar.className='form-actions';
+      const btn=document.createElement('button'); btn.id='tc-more'; btn.className='btn btn-outline'; btn.textContent='Ostatní';
+      moreBar.appendChild(btn); actions.insertAdjacentElement('afterend', moreBar);
+      const wrap=document.createElement('div'); wrap.id='tc-more-wrap'; wrap.className='admin-actions hidden';
+      wrap.innerHTML = `
+        <div class="action-row">
+          <input id="tc-rename-input" type="text" placeholder="Název ticketu" />
+          <button id="tc-rename" class="btn btn-outline">Přejmenovat</button>
+        </div>
+        <div class="action-row">
+          <button id="tc-start-2" class="btn btn-outline">Řešit ticket</button>
+          <button id="tc-solve-2" class="btn btn-primary">Ukončit ticket</button>
+        </div>`;
+      chat.appendChild(wrap);
+      btn.addEventListener('click',()=> wrap.classList.toggle('hidden'));
+      qs('#tc-rename')?.addEventListener('click', async ()=>{
+        if(!TC.currentId) return; const name=(qs('#tc-rename-input')?.value||'').trim(); if(!name) return;
+        const by=STATE.current?.name||'Staff'; const t=TStore.rename(TC.currentId,name,by);
+        try{ await dataPost('/tickets/rename',{id:TC.currentId, name, by}); }catch{}
+        if(t) { TC.title.textContent = `#${t.no} • ${t.name}`; renderAdminTickets(); renderMyTickets({id:t.userId}); }
+      });
+      const start2=qs('#tc-start-2'), solve2=qs('#tc-solve-2');
+      start2?.addEventListener('click',()=> TC.start?.click());
+      solve2?.addEventListener('click',()=> TC.solve?.click());
+    }
+  }catch{}
+
   (t.messages||[]).forEach(m=>{
     const row=document.createElement('div'); row.className='msg'+(m.byId===STATE.current?.id?' me':'');
     const b=document.createElement('div'); b.className='bubble'+(m.by==='system'?' system':'');
@@ -273,12 +306,12 @@ async function openTicketChat(id,isAdmin){
     const cur=await getTicketById(TC.currentId); if(!cur) return;
     const count=(cur.messages||[]).length;
     if(count!==__lastMsgCount){
-      const newCount=count; const oldCount=__lastMsgCount; __lastMsgCount=count;
-      // notify if latest message not by me and not system
+      __lastMsgCount=count;
       const last=cur.messages?.[cur.messages.length-1];
       if(last && last.by!=='system' && last.byId!==STATE.current?.id){
         const isStaffMsg = last.role==='staff';
-        const canNotify = (!STATE.isStaff && isStaffMsg) || (STATE.isStaff && cur.startedBy && cur.startedBy=== (STATE.current?.name||''));
+        const isSolver = STATE.isStaff && cur.startedById && cur.startedById=== (STATE.current?.id||'');
+        const canNotify = (!STATE.isStaff && isStaffMsg) || isSolver;
         if(canNotify) showTicketToast(cur,last);
       }
       openTicketChat(TC.currentId,isAdmin);
@@ -784,7 +817,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     e.target.value='';
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
-  TC.start?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/start',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,true); renderAdminTickets(); });
+  TC.start?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff',STATE.current?.id||null); try{ await dataPost('/tickets/start',{id:TC.currentId, by:STATE.current?.name||'Staff', byId:STATE.current?.id||null}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,true); renderAdminTickets(); });
   TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
   TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); closeTicketChat(); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); renderAdminLogs(1); });
   // Admin actions require reasons (placeholder enable rules)
@@ -817,7 +850,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
             if(m && m.by!=='system' && m.byId!==STATE.current?.id){
               const isStaffMsg=m.role==='staff';
               const forPlayer = !STATE.isStaff && isStaffMsg;
-              const forSolver = STATE.isStaff && t.startedBy && t.startedBy=== (STATE.current?.name||'');
+              const forSolver = STATE.isStaff && t.startedById && t.startedById=== (STATE.current?.id||'');
               if(forPlayer || forSolver) showTicketToast(t,m);
             }
           }
@@ -894,7 +927,9 @@ function openAdmin(){
 
 // Toast notifications and sound
 function ensureToasts(){ let t=qs('#toasts'); if(!t){ t=document.createElement('div'); t.id='toasts'; document.body.appendChild(t); } return t; }
-function playNotifSound(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime+0.01); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.14); o.stop(ctx.currentTime+0.15); }, 120); }catch{} }
+let __AUDIO_CTX=null, __AUDIO_UNLOCKED=false; function unlockAudio(){ try{ if(!__AUDIO_CTX){ __AUDIO_CTX=new (window.AudioContext||window.webkitAudioContext)(); } if(__AUDIO_CTX.state==='suspended'){ __AUDIO_CTX.resume(); } __AUDIO_UNLOCKED=true; document.removeEventListener('pointerdown',unlockAudio); }catch{} }
+addEventListener('pointerdown', unlockAudio, { once:true });
+function playNotifSound(){ try{ if(!__AUDIO_CTX){ __AUDIO_CTX=new (window.AudioContext||window.webkitAudioContext)(); } if(__AUDIO_CTX.state==='suspended' && !__AUDIO_UNLOCKED) return; const ctx=__AUDIO_CTX; const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime+0.01); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.14); o.stop(ctx.currentTime+0.15); }, 120); }catch{} }
 function showTicketToast(t,m){ const host=ensureToasts(); const d=document.createElement('div'); d.className='toast'; d.innerHTML=`<div class="t-title">#${t.no} • ${t.name||t.type}</div><div class="t-meta">${m.by}</div><div class="t-body">${(m.text||'').slice(0,160)}</div>`; d.addEventListener('click',()=>{ try{ openTicketChat(t.id, STATE.isStaff); }catch{}; d.remove(); }); host.appendChild(d); playNotifSound(); setTimeout(()=>{ try{ d.remove(); }catch{} }, 8000); }
 
 function ensureNavAdminLink(isStaff){
