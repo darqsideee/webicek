@@ -387,7 +387,34 @@
       </div>
     </div>
   </footer>
+  <!-- Music Player (bottom-right) -->
+  <div id="music-player" class="panel">
+    <div class="mp-header">
+      <img id="mp-thumb" alt="thumb" />
+      <div class="mp-meta">
+        <div id="mp-title">Hudba</div>
+        <select id="mp-select"></select>
+      </div>
+    </div>
+    <div class="mp-controls">
+      <button id="mp-play" class="btn btn-primary">▶</button>
+      <button id="mp-pause" class="btn btn-outline">⏸</button>
+      <button id="mp-stop" class="btn btn-outline">■</button>
+      <button id="mp-skip" class="btn btn-outline">⏭</button>
+    </div>
+    <div class="mp-progress">
+      <span id="mp-time">0:00</span>
+      <input id="mp-progress" type="range" min="0" max="100" value="0" />
+      <span id="mp-duration">0:00</span>
+    </div>
+    <div class="mp-volume">
+      <span class="muted">Hlasitost</span>
+      <input id="mp-volume" type="range" min="0" max="100" value="60" />
+    </div>
+    <div id="mp-yt"></div>
+  </div>
 
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="app.js"></script>
 </body>
 </html>
