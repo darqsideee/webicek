@@ -112,13 +112,13 @@
             <div class="pyr-row">
               <div class="staff-card">
                 <img src="https://cdn.discordapp.com/embed/avatars/2.png" alt="Admin" />
-                <div class="staff-name">n1atasssss</div>
-                <div class="staff-role">Nelegel Management</div>
+                <div class="staff-name">Admin</div>
+                <div class="staff-role">Správa komunity</div>
               </div>
               <div class="staff-card">
-                <img src="https://postimg.cc/JtHZTcYf" alt="Developer" />
-                <div class="staff-name">ew_i</div>
-                <div class="staff-role">Community manager</div>
+                <img src="https://cdn.discordapp.com/embed/avatars/3.png" alt="Developer" />
+                <div class="staff-name">Developer</div>
+                <div class="staff-role">Server a skripty</div>
               </div>
             </div>
             <!-- Další řady pyramidy lze přidat jako další .pyr-row -->
@@ -305,6 +305,7 @@
             <div class="panel-title">Nástroje</div>
             <div class="panel-actions">
               <button class="btn btn-outline" id="admin-cleaner-open">Čistič</button>
+              <button class="btn btn-outline" id="admin-dm-open">Messager</button>
             </div>
           </div>
         </div>
@@ -327,6 +328,39 @@
         <div id="cleaner-news" class="list hidden" style="max-height:420px;overflow:auto"></div>
       </div>
     </div>
+
+    <!-- Web Message Modal -->
+  <div id="dm-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" style="max-width:720px">
+      <div class="modal-title">Messager</div>
+      <button class="btn btn-ghost" id="dm-close" style="position:absolute;top:10px;right:10px">✕</button>
+      <div class="admin-actions">
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px">
+          <div>
+            <label for="dm-type" class="muted">Typ zprávy</label>
+            <select id="dm-type">
+              <option value="warn">Výzva (červený/černý embed)</option>
+              <option value="info">Normální (fialový embed)</option>
+            </select>
+          </div>
+          <div>
+            <label for="dm-user" class="muted">Discord ID</label>
+            <input id="dm-user" type="text" placeholder="Např. 123456789012345678" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label for="dm-head" class="muted">Nadpis</label>
+            <input id="dm-head" type="text" placeholder="Titulek" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label for="dm-body" class="muted">Text</label>
+            <textarea id="dm-body" rows="6" placeholder="Text zprávy"></textarea>
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" id="dm-send">Odeslat</button></div>
+      </div>
+    </div>
+  </div>
 
     <!-- Ticket Modal -->
     <div id="ticket-modal" class="modal hidden">
