@@ -613,7 +613,10 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     }catch{}
   }
   // If staff detected by roles, ensure staff UI is visible
-  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); renderAdminTickets(); A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); if(A.logs){ A.logs.classList.remove('hidden'); renderGalleryLogs(); } }
+  if(STATE.isStaff){ show(S.staffNote); S.staffActions?.classList.add('hidden'); // remove dashboard admin button
+    // ensure nav admin link exists for staff
+    ensureNavAdminLink(true);
+    show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); renderAdminTickets(); A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); if(A.logs){ A.logs.classList.remove('hidden'); renderGalleryLogs(); } }
   showDashboard(true);
  }catch(e){
    setHeaderLoggedIn(null);
@@ -636,8 +639,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
       const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
       const wasStaff=STATE.isStaff;
       STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
-      if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); A.galAllow?.classList.remove('hidden'); A.logs?.classList.remove('hidden'); renderAdminTickets(); renderAdminGalleryPending(); renderGalleryLogs(); }
-      else if(wasStaff && !STATE.isStaff){ hide(S.staffNote); hide(S.staffActions); hide(S.newsAdmin); }
+      if(STATE.isStaff){ show(S.staffNote); S.staffActions?.classList.add('hidden'); ensureNavAdminLink(true); show(S.newsAdmin); A.closedPanel?.classList.remove('hidden'); A.galAllow?.classList.remove('hidden'); A.logs?.classList.remove('hidden'); renderAdminTickets(); renderAdminGalleryPending(); renderGalleryLogs(); }
+      else if(wasStaff && !STATE.isStaff){ hide(S.staffNote); ensureNavAdminLink(false); hide(S.newsAdmin); }
     }catch{}
   },5000);
   // Tickets wiring
@@ -711,7 +714,22 @@ function openAdmin(){
   if(STATE.isStaff || STATE.canSeeLogs) renderGalleryLogs();
 }
 
-document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); qs('#btn-open-admin')?.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); }); });
+function ensureNavAdminLink(isStaff){
+  const id='nav-admin';
+  const existing=qs('#'+id);
+  if(isStaff){
+    if(existing) return;
+    // try to put into main nav .links, else .actions, else body header
+    const host = qs('.links') || qs('.actions') || qs('header .nav-inner') || qs('header') || document.body;
+    const a=document.createElement('a'); a.id=id; a.href='#admin'; a.textContent='Admin dashboard'; a.className='chip';
+    a.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); });
+    host.appendChild(a);
+  } else {
+    existing?.remove();
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); qs('#nav-admin')?.addEventListener('click',(e)=>{ e.preventDefault?.(); openAdmin(); }); });
 
 // Logout button wiring (in dashboard staff actions)
 qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reload(); });
