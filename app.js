@@ -260,7 +260,7 @@ async function openTicketChat(id,isAdmin){
     const cur=await getTicketById(TC.currentId); if(!cur) return;
     const count=(cur.messages||[]).length;
     if(count!==__lastMsgCount){ __lastMsgCount=count; openTicketChat(TC.currentId,isAdmin); }
-  }, 3000);
+  }, 1000);
 }
 
 function closeTicketChat(){ TC.modal?.classList.add('hidden'); TC.currentId=null; TC.input.value=''; if(__chatPoll) { clearInterval(__chatPoll); __chatPoll=null; } }
@@ -743,15 +743,19 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   // Admin tickets refresh
   qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
   qs('#ad-closed-refresh')?.addEventListener('click',()=>{ renderClosedTickets(); });
-  // Live refresh Gallery/News for open users
-  let __galPoll=null, __newsPoll=null;
+  // Live refresh Gallery/News and Tickets for open users
+  let __galPoll=null, __newsPoll=null, __openPoll=null, __closedPoll=null;
   const startLiveRefresh=()=>{
-    if(!__galPoll){ __galPoll=setInterval(()=>{ try{ renderGallery(); renderAdminGalleryPending(); }catch{} }, 10000); }
-    if(!__newsPoll){ __newsPoll=setInterval(()=>{ try{ renderNews(STATE.newsPage||1); }catch{} }, 12000); }
+    if(!__galPoll){ __galPoll=setInterval(()=>{ try{ renderGallery(); renderAdminGalleryPending(); }catch{} }, 1000); }
+    if(!__newsPoll){ __newsPoll=setInterval(()=>{ try{ renderNews(STATE.newsPage||1); }catch{} }, 1000); }
+    if(!__openPoll){ __openPoll=setInterval(()=>{ try{ renderAdminTickets(); }catch{} }, 2000); }
+    if(!__closedPoll){ __closedPoll=setInterval(()=>{ try{ renderClosedTickets(); }catch{} }, 2000); }
   };
-  const stopLiveRefresh=()=>{ if(__galPoll){ clearInterval(__galPoll); __galPoll=null; } if(__newsPoll){ clearInterval(__newsPoll); __newsPoll=null; } };
+  const stopLiveRefresh=()=>{ if(__galPoll){ clearInterval(__galPoll); __galPoll=null; } if(__newsPoll){ clearInterval(__newsPoll); __newsPoll=null; } if(__openPoll){ clearInterval(__openPoll); __openPoll=null; } if(__closedPoll){ clearInterval(__closedPoll); __closedPoll=null; } };
   startLiveRefresh();
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') stopLiveRefresh(); else startLiveRefresh(); });
+  // initial logs render if panel present
+  if(A.logsList) { try{ renderAdminLogs(1); }catch{} }
   // Cleaner modal wiring
   const CL={wrap:qs('#cleaner-modal'), open:qs('#admin-cleaner-open'), close:qs('#cleaner-close'), tabGal:qs('#cleaner-tab-gallery'), tabNews:qs('#cleaner-tab-news'), listGal:qs('#cleaner-gallery'), listNews:qs('#cleaner-news')};
   const showCleaner=(v)=>{ if(!CL.wrap) return; if(v) CL.wrap.classList.remove('hidden'); else CL.wrap.classList.add('hidden'); };
