@@ -1061,16 +1061,17 @@ function setupOwnerUI(){ try{
   const btnTools=qs('#owner-tools-open');
   const btnGive=qs('#owner-giveaway-open');
   const btnRev=qs('#bot-reviver-toggle');
-  const allowed = isOwnerAllowed();
-  if(btnTools){ if(allowed) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
-  if(btnGive){ if(allowed) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
+  const ownerAllowed = isOwnerAllowed();
+  const adminAllowed = !!STATE?.isStaff; // admins (staff) can use bot reviver
+  if(btnTools){ if(ownerAllowed) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
+  if(btnGive){ if(ownerAllowed) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
   if(btnRev){
-    if(allowed) btnRev.classList.remove('hidden'); else btnRev.classList.add('hidden');
+    if(adminAllowed) btnRev.classList.remove('hidden'); else btnRev.classList.add('hidden');
     const setLabel=()=>{ btnRev.textContent = window.__reviveTimer ? 'Bot Reviver OFF' : 'Bot Reviver ON'; };
     setLabel();
     if(!btnRev.__bound){
       btnRev.addEventListener('click',()=>{
-        if(!isOwnerAllowed()){ alertShow('Pouze owner.'); return; }
+        if(!adminAllowed){ alertShow('Pouze admin.'); return; }
         if(window.__reviveTimer){ stopReviveHeartbeat(); }
         else { startReviveHeartbeat(); }
         setLabel();
