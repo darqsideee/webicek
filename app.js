@@ -270,7 +270,7 @@ async function openTicketChat(id,isAdmin){
     const cur=await getTicketById(TC.currentId); if(!cur) return;
     const count=(cur.messages||[]).length;
     if(count!==__lastMsgCount){ __lastMsgCount=count; openTicketChat(TC.currentId,isAdmin); }
-  }, 1000);
+  }, 500);
 }
 
 function closeTicketChat(){ TC.modal?.classList.add('hidden'); TC.currentId=null; TC.input.value=''; if(__chatPoll) { clearInterval(__chatPoll); __chatPoll=null; } }
