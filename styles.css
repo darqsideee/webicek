@@ -111,15 +111,20 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 
 .staff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
 /* Pyramid */
-.staff-pyramid{display:flex;flex-direction:column;gap:12px;margin-top:10px}
-.pyr-row{display:flex;justify-content:center;gap:12px}
+.staff-pyramid{display:flex;flex-direction:column;gap:16px;margin-top:14px;align-items:center}
+.pyr-row{display:flex;justify-content:center;gap:16px;width:100%}
 .pyr-row.top{justify-content:center}
-.staff-card{position:relative;padding:12px;border:1px solid rgba(124,58,237,.25);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06));overflow:hidden;min-width:180px;display:flex;flex-direction:column;align-items:center;text-align:center}
-.staff-card img{width:72px;height:72px;border-radius:50%;box-shadow:0 8px 30px rgba(124,58,237,.35);object-fit:cover}
-.staff-name{font-weight:700;margin-top:6px}
-.staff-role{color:var(--muted);font-size:.9rem}
-@media (max-width:720px){ .pyr-row{flex-wrap:wrap} .staff-card{min-width:140px} }
-@media (max-width:520px){ .pyr-row{gap:8px} .staff-card{min-width:130px} }
+/* Emphasize individual staff cards */
+.staff-card{position:relative;padding:16px 18px;border:2px solid rgba(124,58,237,.35);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(124,58,237,.08));overflow:hidden;min-width:220px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 30px rgba(124,58,237,.18)}
+/* Top founder card slightly larger */
+.pyr-row.top .staff-card{min-width:260px;padding:18px 22px;border-color:rgba(124,58,237,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 40px rgba(124,58,237,.26)}
+.staff-card img{width:90px;height:90px;border-radius:50%;box-shadow:0 10px 34px rgba(124,58,237,.38);object-fit:cover}
+.pyr-row.top .staff-card img{width:100px;height:100px}
+.staff-name{font-weight:800;margin-top:8px}
+.staff-role{color:var(--muted);font-size:.95rem}
+@media (max-width:900px){ .staff-card{min-width:200px} .pyr-row.top .staff-card{min-width:240px} }
+@media (max-width:720px){ .pyr-row{flex-wrap:wrap;gap:12px} .staff-card{min-width:170px;padding:14px} .pyr-row.top .staff-card{min-width:200px} .staff-card img{width:82px;height:82px} .pyr-row.top .staff-card img{width:90px;height:90px} }
+@media (max-width:520px){ .pyr-row{gap:10px} .staff-card{min-width:160px} .pyr-row.top .staff-card{min-width:190px} }
 
 .footer{border-top:1px solid rgba(124,58,237,.15);padding:22px 0;background:linear-gradient(180deg,transparent,rgba(124,58,237,.05))}
 .footer-inner{display:flex;justify-content:space-between;align-items:center}
