@@ -137,7 +137,8 @@ const TStore={
   closed(){return this.all().filter(t=>t.status==='closed').sort((a,b)=>b.solvedTs-a.solvedTs)},
   close(id,by){const v=this.all(); const t=v.find(x=>x.id===id); if(t){t.status='closed'; t.solvedTs=Date.now(); t.solvedBy=by||'Staff'; (t.messages||(t.messages=[])).push({by:'system',text:`Solved by ${t.solvedBy}`,ts:Date.now()}); this.save(v);} return t},
   start(id,by){const v=this.all(); const t=v.find(x=>x.id===id); if(t && !t.startedTs){ t.startedTs=Date.now(); t.startedBy=by||'Staff'; (t.messages||(t.messages=[])).push({by:'system',text:`${t.startedBy} started solving`,ts:Date.now()}); this.save(v);} return t},
-  addMsg(id,byName,byId,role,text,image){const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return; (t.messages||(t.messages=[])).push({by:byName, byId, role, text, image:image||null, ts:Date.now()}); this.save(v); return t}
+  addMsg(id,byName,byId,role,text,image){const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return; (t.messages||(t.messages=[])).push({by:byName, byId, role, text, image:image||null, ts:Date.now()}); this.save(v); return t},
+  rename(id,name,by){ const v=this.all(); const t=v.find(x=>x.id===id); if(!t) return null; t.name=String(name).slice(0,80); (t.messages||(t.messages=[])).push({by:'system',text:`Ticket renamed to '${t.name}' by ${by||'Staff'}`,ts:Date.now()}); this.save(v); return t }
 };
 
 let __adminTimer=null;
@@ -158,8 +159,9 @@ function ticketItemEl(t,opts={}){
   const wrap=document.createElement('div');
   wrap.className='guild';
   const meta=document.createElement('div');
+  const label = t.name ? t.name : t.type;
   const solverInfo = t.solvedBy? ` • Solved by ${t.solvedBy}`: '';
-  meta.innerHTML=`<div class="g-name">#${t.no||'?'} • ${t.type} • ${new Date(t.ts).toLocaleString()}${solverInfo}</div><div class="g-id">${t.reason}</div>`;
+  meta.innerHTML=`<div class="g-name">#${t.no||'?'} • ${label} • ${new Date(t.ts).toLocaleString()}${solverInfo}</div><div class="g-id">${t.reason}</div>`;
   wrap.appendChild(meta);
   if(t.image){ const img=document.createElement('img'); img.src=t.image; img.alt='evidence'; img.style.width='46px'; img.style.height='46px'; img.style.borderRadius='8px'; wrap.insertBefore(img,meta); }
   wrap.style.cursor='pointer';
@@ -237,7 +239,8 @@ let __chatPoll=null, __lastMsgCount=0;
 async function openTicketChat(id,isAdmin){
   const t=await getTicketById(id); if(!t||!TC.modal) return;
   TC.currentId=t.id;
-  TC.title.textContent=`Ticket #${t.no} • ${t.type}`;
+  const label = t.name ? t.name : t.type; const closedTag = (t.status==='closed') ? '' : '';
+  TC.title.textContent = `#${t.no} • ${label}`;
   TC.list.textContent='';
   (t.messages||[]).forEach(m=>{
     const row=document.createElement('div'); row.className='msg'+(m.byId===STATE.current?.id?' me':'');
@@ -269,7 +272,17 @@ async function openTicketChat(id,isAdmin){
   __chatPoll=setInterval(async ()=>{
     const cur=await getTicketById(TC.currentId); if(!cur) return;
     const count=(cur.messages||[]).length;
-    if(count!==__lastMsgCount){ __lastMsgCount=count; openTicketChat(TC.currentId,isAdmin); }
+    if(count!==__lastMsgCount){
+      const newCount=count; const oldCount=__lastMsgCount; __lastMsgCount=count;
+      // notify if latest message not by me and not system
+      const last=cur.messages?.[cur.messages.length-1];
+      if(last && last.by!=='system' && last.byId!==STATE.current?.id){
+        const isStaffMsg = last.role==='staff';
+        const canNotify = (!STATE.isStaff && isStaffMsg) || (STATE.isStaff && cur.startedBy && cur.startedBy=== (STATE.current?.name||''));
+        if(canNotify) showTicketToast(cur,last);
+      }
+      openTicketChat(TC.currentId,isAdmin);
+    }
   }, 500);
 }
 
@@ -716,6 +729,38 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   renderAdminTickets();
   // Ticket chat controls
   TC.close?.addEventListener('click',closeTicketChat);
+  // Inject 'Ostatní' tools row dynamically
+  try{
+    const chat=qs('#ticket-chat .chat');
+    const actions=qs('#ticket-chat .chat-actions');
+    if(chat && actions && !qs('#tc-more')){
+      const moreBar=document.createElement('div'); moreBar.className='form-actions';
+      const btn=document.createElement('button'); btn.id='tc-more'; btn.className='btn btn-outline'; btn.textContent='Ostatní';
+      moreBar.appendChild(btn); actions.insertAdjacentElement('afterend', moreBar);
+      const wrap=document.createElement('div'); wrap.id='tc-more-wrap'; wrap.className='admin-actions hidden';
+      wrap.innerHTML = `
+        <div class="action-row">
+          <input id="tc-rename-input" type="text" placeholder="Název ticketu" />
+          <button id="tc-rename" class="btn btn-outline">Přejmenovat</button>
+        </div>
+        <div class="action-row">
+          <button id="tc-start-2" class="btn btn-outline">Řešit ticket</button>
+          <button id="tc-solve-2" class="btn btn-primary">Ukončit ticket</button>
+        </div>`;
+      chat.appendChild(wrap);
+      btn.addEventListener('click',()=> wrap.classList.toggle('hidden'));
+      qs('#tc-rename')?.addEventListener('click', async ()=>{
+        if(!TC.currentId) return; const name=(qs('#tc-rename-input')?.value||'').trim(); if(!name) return;
+        const by=STATE.current?.name||'Staff'; const t=TStore.rename(TC.currentId,name,by);
+        try{ await dataPost('/tickets/rename',{id:TC.currentId, name, by}); }catch{}
+        if(t) { TC.title.textContent = `#${t.no} • ${t.name}`; renderAdminTickets(); renderMyTickets({id:t.userId}); }
+      });
+      const start2=qs('#tc-start-2'), solve2=qs('#tc-solve-2');
+      start2?.addEventListener('click',()=> TC.start?.click());
+      solve2?.addEventListener('click',()=> TC.solve?.click());
+    }
+  }catch{}
+
   TC.send?.addEventListener('click',async ()=>{
     if(!TC.currentId) return; const txt=TC.input.value.trim(); if(!txt) return;
     const by=HP.pillName?.textContent||'User'; const byId=STATE.current?.id||'me';
@@ -754,14 +799,34 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
   qs('#ad-closed-refresh')?.addEventListener('click',()=>{ renderClosedTickets(); });
   // Live refresh Gallery/News and Tickets for open users
-  let __galPoll=null, __newsPoll=null, __openPoll=null, __closedPoll=null;
+  let __galPoll=null, __newsPoll=null, __openPoll=null, __closedPoll=null, __ticketMsgPoll=null;
   const startLiveRefresh=()=>{
     if(!__galPoll){ __galPoll=setInterval(()=>{ try{ renderGallery(); renderAdminGalleryPending(); }catch{} }, 1000); }
     if(!__newsPoll){ __newsPoll=setInterval(()=>{ try{ renderNews(STATE.newsPage||1); }catch{} }, 1000); }
     if(!__openPoll){ __openPoll=setInterval(()=>{ try{ renderAdminTickets(); }catch{} }, 2000); }
     if(!__closedPoll){ __closedPoll=setInterval(()=>{ try{ renderClosedTickets(); }catch{} }, 2000); }
+    if(!__ticketMsgPoll){ __ticketMsgPoll=setInterval(async ()=>{
+      try{
+        await syncTicketsFromServer();
+        const all=TStore.all();
+        const map = (window.__lastCounts||(window.__lastCounts={}));
+        all.forEach(t=>{
+          const count=(t.messages||[]).length; const prev=map[t.id]||0;
+          if(count>prev){
+            const m=t.messages[t.messages.length-1];
+            if(m && m.by!=='system' && m.byId!==STATE.current?.id){
+              const isStaffMsg=m.role==='staff';
+              const forPlayer = !STATE.isStaff && isStaffMsg;
+              const forSolver = STATE.isStaff && t.startedBy && t.startedBy=== (STATE.current?.name||'');
+              if(forPlayer || forSolver) showTicketToast(t,m);
+            }
+          }
+          map[t.id]=count;
+        });
+      }catch{}
+    }, 1500); }
   };
-  const stopLiveRefresh=()=>{ if(__galPoll){ clearInterval(__galPoll); __galPoll=null; } if(__newsPoll){ clearInterval(__newsPoll); __newsPoll=null; } if(__openPoll){ clearInterval(__openPoll); __openPoll=null; } if(__closedPoll){ clearInterval(__closedPoll); __closedPoll=null; } };
+  const stopLiveRefresh=()=>{ if(__galPoll){ clearInterval(__galPoll); __galPoll=null; } if(__newsPoll){ clearInterval(__newsPoll); __newsPoll=null; } if(__openPoll){ clearInterval(__openPoll); __openPoll=null; } if(__closedPoll){ clearInterval(__closedPoll); __closedPoll=null; } if(__ticketMsgPoll){ clearInterval(__ticketMsgPoll); __ticketMsgPoll=null; } };
   startLiveRefresh();
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') stopLiveRefresh(); else startLiveRefresh(); });
   // initial logs render if panel present
@@ -826,6 +891,11 @@ function openAdmin(){
   renderAdminGalleryPending();
   if(STATE.isStaff || STATE.canSeeLogs) renderGalleryLogs();
 }
+
+// Toast notifications and sound
+function ensureToasts(){ let t=qs('#toasts'); if(!t){ t=document.createElement('div'); t.id='toasts'; document.body.appendChild(t); } return t; }
+function playNotifSound(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime+0.01); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.14); o.stop(ctx.currentTime+0.15); }, 120); }catch{} }
+function showTicketToast(t,m){ const host=ensureToasts(); const d=document.createElement('div'); d.className='toast'; d.innerHTML=`<div class="t-title">#${t.no} • ${t.name||t.type}</div><div class="t-meta">${m.by}</div><div class="t-body">${(m.text||'').slice(0,160)}</div>`; d.addEventListener('click',()=>{ try{ openTicketChat(t.id, STATE.isStaff); }catch{}; d.remove(); }); host.appendChild(d); playNotifSound(); setTimeout(()=>{ try{ d.remove(); }catch{} }, 8000); }
 
 function ensureNavAdminLink(isStaff){
   const id='nav-admin';
