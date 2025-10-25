@@ -206,6 +206,7 @@ async function renderAdminTickets(){
   if(items.length===0){ A.list.textContent='No open tickets.'; return; }
   A.list.textContent='';
   items.forEach(t=>{ A.list.appendChild(ticketItemEl(t,{adminView:true})); });
+  // clicking any item already opens chat via ticketItemEl -> openTicketChat(..., true)
 }
 
 async function renderClosedTickets(){
@@ -420,9 +421,11 @@ async function renderNews(page=1){
     const body=document.createElement('div');body.className='news-body';body.innerHTML=parseNewsBody(n.body);card.appendChild(body);
     const meta=document.createElement('div');meta.className='muted';meta.textContent=`od ${n.user} • ${new Date(n.ts).toLocaleString()}`;card.appendChild(meta);
     if(STATE.isStaff){
-      const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat novinku'; del.style.marginTop='8px';
+      const row=document.createElement('div'); row.className='admin-actions'; row.style.marginTop='8px';
+      const del=document.createElement('button'); del.className='btn btn-muted'; del.textContent='Smazat novinku';
       del.addEventListener('click',()=>deleteNews(n.ts));
-      card.appendChild(del);
+      row.appendChild(del);
+      card.appendChild(row);
     }
     S.newsList.appendChild(card);
   });
@@ -702,8 +705,8 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   });
   TC.input?.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); TC.send?.click(); }});
   TC.start?.addEventListener('click',()=>{ if(!TC.currentId) return; TStore.start(TC.currentId,STATE.current?.name||'Staff'); openTicketChat(TC.currentId,true); renderAdminTickets(); });
-  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
-  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
+  TC.solve?.addEventListener('click',async ()=>{ if(!TC.currentId) return; TStore.close(TC.currentId,STATE.current?.name||'Staff'); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||'Staff'}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,true); renderAdminTickets(); renderClosedTickets(); });
+  TC.closeUser?.addEventListener('click',async ()=>{ if(!TC.currentId) return; const t=TStore.all().find(x=>x.id===TC.currentId); if(!t) return; if(STATE.current?.id!==t.userId || t.status==='closed') return; TStore.addMsg(TC.currentId,'system',t.userId,'user','Ticket uzavřen hráčem',null); TStore.close(TC.currentId,STATE.current?.name||t.user); try{ await dataPost('/tickets/close',{id:TC.currentId, by:STATE.current?.name||t.user}); }catch{} await syncTicketsFromServer(); openTicketChat(TC.currentId,false); renderMyTickets({id:t.userId}); renderAdminTickets(); renderClosedTickets(); });
   // Admin actions require reasons (placeholder enable rules)
   function enableIfReason(input,btns){ const upd=()=>{ const ok=!!input?.value.trim(); btns.forEach(b=> b && (b.disabled=!ok)); }; input?.addEventListener('input',upd); upd(); }
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
@@ -714,6 +717,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   qs('#ticket-modal .modal-backdrop')?.addEventListener('click',()=>showTicketModal(false));
   // Admin tickets refresh
   qs('#ad-tickets-refresh')?.addEventListener('click',()=>{ renderAdminTickets(); });
+  qs('#ad-closed-refresh')?.addEventListener('click',()=>{ renderClosedTickets(); });
   
   // Gallery upload modal wiring
   const gm={wrap:qs('#gal-modal'), open:qs('#gal-upload-open'), close:qs('#gal-close'), file:qs('#gm-file'), url:qs('#gm-image'), cap:qs('#gm-caption'), add:qs('#gm-add')};
