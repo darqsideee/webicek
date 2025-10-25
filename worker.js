@@ -151,15 +151,15 @@ export default {
         if (path === '/giveaway/create' && method === 'POST') {
           try{
             if(!env.BOT_TOKEN) return json({ ok:false, error:'missing_bot_token' }, env, 400);
-            const { channelId, head, body, footerIcon, durationMin=60, winners=1, by } = await request.json();
+            const { channelId, head, body, footerText, footerIcon, durationMin=60, winners=1, by } = await request.json();
             if(!channelId || !head || !body) return json({ ok:false, error:'missing_params' }, env, 400);
             const endsAt = Date.now() + Number(durationMin)*60*1000;
-            const embed = { title: head, description: `${body}\n\n⏳ Končí: <t:${Math.floor(endsAt/1000)}:R>\n🎁 Výherci: ${winners}`, color: 0xffa500, timestamp: new Date().toISOString(), footer: { text: by? `by ${by}` : 'Giveaway', icon_url: footerIcon||undefined } };
+            const embed = { title: head, description: `${body}\n\n⏳ Končí: <t:${Math.floor(endsAt/1000)}:R>\n🎁 Výherci: ${winners}`, color: 0xffa500, timestamp: new Date().toISOString(), footer: { text: footerText || (by? `by ${by}` : 'Giveaway') } };
             const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`,{ method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bot ${env.BOT_TOKEN}` }, body: JSON.stringify({ embeds:[embed], content:'🎉 Giveaway zahájen!' }) });
             if(!r.ok){ const txt=await r.text().catch(()=>'' ); return json({ ok:false, error:'gw_post_failed', details:txt }, env, 502); }
             const msg = await r.json();
             // save giveaway
-            const g = { id: `gw_${Date.now()}`, channelId, messageId: msg.id, head, body, footerIcon: footerIcon||'', winners: Number(winners), createdAt: Date.now(), endsAt, by: by||'', participants: [] };
+            const g = { id: `gw_${Date.now()}`, channelId, messageId: msg.id, head, body, footerText: footerText||'', winners: Number(winners), createdAt: Date.now(), endsAt, by: by||'', participants: [] };
             const all = await kvGetArray(env, 'giveaways'); all.push(g); await kvPutArray(env, 'giveaways', all);
             return json({ ok:true, giveaway: g }, env);
           }catch(e){ return json({ ok:false, error:'gw_create_error', message:e.message }, env, 500); }
@@ -169,10 +169,10 @@ export default {
         if (path === '/owner/announce' && method === 'POST') {
           try{
             if(!env.BOT_TOKEN) return json({ ok:false, error:'missing_bot_token' }, env, 400);
-            const { channelId, type='normal', head, body, footerIcon, by } = await request.json();
+            const { channelId, type='normal', head, body, footerText, footerIcon, by } = await request.json();
             if(!channelId || !head || !body) return json({ ok:false, error:'missing_params' }, env, 400);
             const color = type==='warn' ? 0xff0000 : 0x7c3aed;
-            const embed = { title: head, description: body, color, timestamp: new Date().toISOString(), footer: { text: by? `by ${by}` : 'Announcement', icon_url: footerIcon||undefined } };
+            const embed = { title: head, description: body, color, timestamp: new Date().toISOString(), footer: { text: footerText || (by? `by ${by}` : 'Announcement') } };
             const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`,{
               method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bot ${env.BOT_TOKEN}` },
               body: JSON.stringify({ embeds:[embed] })
