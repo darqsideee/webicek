@@ -524,18 +524,22 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     S.btnOpenAdmin?.addEventListener('click',()=>{ location.hash='#admin'; startAdminTimer(); });
     // Admin page gate
     if(A.guard && A.wrap){ A.guard.classList.add('hidden'); A.wrap.classList.remove('hidden'); }
-    // Logs visibility and role-gated panels
     try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[];
       if(roles.includes(cfg.logsRoleId)){ A.logs?.classList.remove('hidden'); STATE.canSeeLogs=true; }
       if(roles.includes(cfg.closedHistoryRoleId)){ A.closedPanel?.classList.remove('hidden'); renderClosedTickets(); }
       if(roles.includes(cfg.galleryAdminRoleId)){ STATE.isGalleryAdmin=true; A.galAllow?.classList.remove('hidden'); renderAdminGalleryPending(); }
-      STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId);
+      STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
     }catch{}
   } else {
     if(A.guard && A.wrap){ A.guard.classList.remove('hidden'); A.wrap.classList.add('hidden'); }
-    // Even if not staff, still check ticket open role to enable open button
-    try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[]; STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId); }catch{}
+    // Even if not staff, still check ticket open role and staff roles
+    try{ const mem=await apiGet(`/users/@me/guilds/${cfg.guildId}/member`); const roles=mem.roles||[]; 
+      STATE.canOpenTickets = roles.includes(cfg.ticketOpenRoleId);
+      STATE.isStaff = roles.includes(cfg.adminRoleId) || roles.includes(cfg.logsRoleId) || roles.includes(cfg.closedHistoryRoleId) || roles.includes(cfg.galleryAdminRoleId);
+    }catch{}
   }
+  // If staff detected by roles, ensure staff UI is visible
+  if(STATE.isStaff){ show(S.staffNote); show(S.staffActions); show(S.newsAdmin); }
   showDashboard(true);
  }catch(e){
    setHeaderLoggedIn(null);
@@ -552,7 +556,6 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   renderHomePromoted();
   renderHomeNews();
   applyTicketGate();
-  startPlayerAutoRefresh(true);
   // Tickets wiring
   T.openBtn?.addEventListener('click',()=>showTicketModal(true));
   T.mCancel?.addEventListener('click',()=>showTicketModal(false));
@@ -604,6 +607,9 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
 }
 
 document.addEventListener('DOMContentLoaded',()=>{onReady();setLoginLinks();startParticles()});
+
+// Logout button wiring (in dashboard staff actions)
+qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reload(); });
 
 function startParticles(){const c=qs('#bg-particles');const ctx=c.getContext('2d');function rs(){c.width=innerWidth;c.height=innerHeight}rs();addEventListener('resize',rs);const dots=[...Array(80)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,s:.6+Math.random()*1.6,dx:(Math.random()-.5)*.6,dy:(Math.random()-.5)*.6,o:.2+.6*Math.random()}));function step(){ctx.clearRect(0,0,c.width,c.height);for(const d of dots){d.x+=d.dx;d.y+=d.dy;if(d.x<0||d.x>c.width)d.dx*=-1;if(d.y<0||d.y>c.height)d.dy*=-1;ctx.beginPath();const g=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,16*d.s);g.addColorStop(0,`rgba(124,58,237,${px(d.o)})`);g.addColorStop(1,'rgba(124,58,237,0)');ctx.fillStyle=g;ctx.arc(d.x,d.y,16*d.s,0,Math.PI*2);ctx.fill()}requestAnimationFrame(step)}requestAnimationFrame(step)}
 
