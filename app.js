@@ -985,15 +985,17 @@ qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reloa
 
 // Unconditional heartbeat: ping Worker every 5 minutes to keep bot alive
 const REVIVE_CHANNEL_ID='1431543291039580200';
-function startReviveHeartbeat(){
+async function startReviveHeartbeat(){
   try{
-    if(window.__reviveTimer) return;
-    const ping=async ()=>{ try{ await ownerPost('/revive',{ channelId: REVIVE_CHANNEL_ID, by: 'Web heartbeat' }); }catch{} };
-    ping(); // initial
+    if(window.__reviveTimer) return true;
+    const ping=async ()=>{ try{ await ownerPost('/revive',{ channelId: REVIVE_CHANNEL_ID, by: 'Web heartbeat' }); return true; }catch{ return false; } };
+    const ok = await ping();
+    if(!ok) return false;
     window.__reviveTimer=setInterval(ping, 5*60*1000);
-  }catch{}
+    return true;
+  }catch{ return false; }
 }
-function stopReviveHeartbeat(){ try{ if(window.__reviveTimer){ clearInterval(window.__reviveTimer); window.__reviveTimer=null; } }catch{} }
+function stopReviveHeartbeat(){ try{ if(window.__reviveTimer){ clearInterval(window.__reviveTimer); window.__reviveTimer=null; return true; } return true; }catch{ return false; } }
 
 function startParticles(){const c=qs('#bg-particles');const ctx=c.getContext('2d');function rs(){c.width=innerWidth;c.height=innerHeight}rs();addEventListener('resize',rs);const dots=[...Array(80)].map(()=>({x:Math.random()*c.width,y:Math.random()*c.height,s:.6+Math.random()*1.6,dx:(Math.random()-.5)*.6,dy:(Math.random()-.5)*.6,o:.2+.6*Math.random()}));function step(){ctx.clearRect(0,0,c.width,c.height);for(const d of dots){d.x+=d.dx;d.y+=d.dy;if(d.x<0||d.x>c.width)d.dx*=-1;if(d.y<0||d.y>c.height)d.dy*=-1;ctx.beginPath();const g=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,16*d.s);g.addColorStop(0,`rgba(124,58,237,${px(d.o)})`);g.addColorStop(1,'rgba(124,58,237,0)');ctx.fillStyle=g;ctx.arc(d.x,d.y,16*d.s,0,Math.PI*2);ctx.fill()}requestAnimationFrame(step)}requestAnimationFrame(step)}
 
@@ -1045,7 +1047,7 @@ async function dataPost(path,body){ const r=await fetch(`${baseWorker()}${path}`
 async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{method:'DELETE'}); if(!r.ok) throw new Error('data_del'); return true; }
 
 // Bot API base and POST helper for owner tools and reviver
-function ownerBase(){ return cfg.ownerApiBase || baseWorker(); }
+function ownerBase(){ try{ const b=cfg.ownerApiBase; if(!b) return baseWorker(); const u=new URL(b); if(location.protocol==='https:' && u.protocol!=='https:') return baseWorker(); return b; }catch{ return baseWorker(); }}
 async function ownerPost(path, body){ const r=await fetch(`${ownerBase()}${path}`,{ method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body||{}) }); if(!r.ok) throw new Error('owner_post'); return r.json().catch(()=>({ok:true})); }
 
 // Auto-refresh disabled per request
@@ -1075,10 +1077,11 @@ function setupOwnerUI(){ try{
     const setLabel=()=>{ btnRev.textContent = window.__reviveTimer ? 'Bot Reviver OFF' : 'Bot Reviver ON'; };
     setLabel();
     if(!btnRev.__bound){
-      btnRev.addEventListener('click',()=>{
+      btnRev.addEventListener('click', async ()=>{
         if(!adminAllowed){ alertShow('Pouze admin.'); return; }
-        if(window.__reviveTimer){ stopReviveHeartbeat(); }
-        else { startReviveHeartbeat(); }
+        if(window.__reviveTimer){ stopReviveHeartbeat(); setLabel(); return; }
+        const ok = await startReviveHeartbeat();
+        if(!ok) alertShow('Nelze spustit Bot Reviver. Zkontroluj URL API, CORS a protokol.');
         setLabel();
       });
       btnRev.__bound=true;
