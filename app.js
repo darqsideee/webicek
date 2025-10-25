@@ -660,7 +660,7 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   nm.add?.addEventListener('click',()=>{ const image=(nm.img?.value||'').trim(); const head=(nm.head?.value||'').trim(); const body=(nm.body?.value||'').trim(); if(!head||!body) return; addNews(image,head,body,HP.pillName?.textContent||'Staff'); nm.img.value=''; nm.head.value=''; nm.body.value=''; nm.wrap?.classList.add('hidden'); });
 }
 
-document.addEventListener('DOMContentLoaded',()=>{onReady();setLoginLinks();startParticles()});
+document.addEventListener('DOMContentLoaded',()=>{ onReady(); setLoginLinks(); wireRulesTabs(); startParticles(); });
 
 // Logout button wiring (in dashboard staff actions)
 qs('#logout-btn')?.addEventListener('click',()=>{ setToken(null); location.reload(); });
