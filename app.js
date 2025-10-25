@@ -649,14 +649,11 @@ function applyTicketGate(){
   else { btn.disabled=true; btn.classList.add('disabled'); }
 }
 
-// Targeted auto refresh every 5s for News, Home feature, Gallery, and Active Tickets
+// Auto refresh every 5s ONLY for Active Tickets in Admin dashboard
 let PARTIAL_TIMER=null;
 function startPartialAutoRefresh(){
   if(PARTIAL_TIMER){ clearInterval(PARTIAL_TIMER); PARTIAL_TIMER=null; }
   PARTIAL_TIMER=setInterval(()=>{
-    try{ renderNews(STATE.newsPage||1); }catch{}
-    try{ renderHomeNews(); }catch{}
-    try{ renderGallery(); }catch{}
     try{ if(typeof renderAdminTickets==='function') renderAdminTickets(); }catch{}
   },5000);
 }
