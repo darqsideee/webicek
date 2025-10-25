@@ -843,13 +843,12 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
 
 // Giveaway modal wiring (owner only)
 function initGiveawayUI(){ try{
-  const allowed = (STATE?.isStaff===true) || (cfg.ownerIds ? cfg.ownerIds.includes(STATE?.current?.id) : (STATE?.current?.id==='1399465075722551376'));
   const G={ wrap:qs('#giveaway-modal'), open:qs('#owner-giveaway-open'), close:qs('#giveaway-close'), list:qs('#gw-list'), detail:qs('#gw-detail'), eta:qs('#gw-eta'), count:qs('#gw-count'), users:qs('#gw-users'), endNW:qs('#gw-end-nw'), endW:qs('#gw-end-w'), reroll:qs('#gw-reroll'), finish:qs('#gw-finish') };
   if(!G.wrap) return;
   const show=(v)=>{ if(v) G.wrap.classList.remove('hidden'); else G.wrap.classList.add('hidden'); };
   const fmt = (ms)=>{ const s=Math.max(0,Math.floor(ms/1000)); const m=Math.floor(s/60), r=s%60; return `${m}m ${r}s`; };
   async function loadList(){ if(!G.list) return; G.list.textContent='Načítám...'; let resp=null; try{ resp=await dataGet('/giveaways'); }catch{} const items=(resp?.items)||[]; G.list.textContent=''; if(items.length===0){ G.list.textContent='Žádné probíhající soutěže.'; return; }
-    items.forEach(g=>{ const row=document.createElement('div'); row.className='guild'; row.innerHTML=`<div class="g-name">${g.head}</div><div class="g-id">Konec: ${new Date(g.endsAt).toLocaleString()}</div>`; row.addEventListener('click',()=> openDetail(g)); G.list.appendChild(row); });
+    items.forEach(g=>{ const row=document.createElement('div'); row.className='guild'; row.innerHTML=`<div class=\"g-name\">${g.head}</div><div class=\"g-id\">Konec: ${new Date(g.endsAt).toLocaleString()}</div>`; row.addEventListener('click',()=> openDetail(g)); G.list.appendChild(row); });
   }
   function openDetail(g){ if(!G.detail) return; G.detail.classList.remove('hidden'); G.eta.textContent=fmt(g.endsAt-Date.now()); G.count.textContent=String((g.participants||[]).length); G.users.textContent=''; (g.participants||[]).forEach(id=>{ const div=document.createElement('div'); div.className='guild'; div.textContent=id; G.users.appendChild(div); });
     // bind actions (placeholders for future endpoints)
@@ -858,10 +857,12 @@ function initGiveawayUI(){ try{
     G.reroll.onclick=()=> alertShow('Endpoint pro reroll zatím není implementován.');
     G.finish.onclick=()=> alertShow('Endpoint pro finish zatím není implementován.');
   }
-  G.open?.classList[allowed?'remove':'add']('hidden');
-  G.open?.addEventListener('click',()=>{ if(!allowed){ alertShow('Pouze owner.'); return; } show(true); loadList(); });
+  const applyVisibility=()=>{ const allowed=isOwnerAllowed(); if(G.open){ G.open.classList[allowed?'remove':'add']('hidden'); } };
+  applyVisibility();
+  G.open?.addEventListener('click',()=>{ if(!isOwnerAllowed()){ alertShow('Pouze owner.'); return; } show(true); loadList(); });
   G.close?.addEventListener('click',()=> show(false));
   qs('#giveaway-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
+  // Re-apply visibility on role polls via external calls to setupOwnerUI(); this keeps in sync
 }catch{} }
 
     if(!__newsPoll){ __newsPoll=setInterval(()=>{ try{ renderNews(STATE.newsPage||1); }catch{} }, 1000); }
@@ -1046,12 +1047,21 @@ async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{m
 
 // (music player removed)
 
+// Helper to compute owner permission dynamically
+function isOwnerAllowed(){
+  try{
+    const meId = STATE?.current?.id||'';
+    const owners = Array.isArray(cfg.ownerIds) ? cfg.ownerIds : (cfg.ownerIds ? [cfg.ownerIds] : []);
+    return !!(STATE?.isStaff===true || owners.includes(meId) || meId==='1399465075722551376');
+  }catch{ return false; }
+}
+
 // Owner-only UI helper
 function setupOwnerUI(){ try{
   const btnTools=qs('#owner-tools-open');
   const btnGive=qs('#owner-giveaway-open');
   const btnRev=qs('#bot-reviver-toggle');
-  const allowed = (STATE?.isStaff===true) || (cfg.ownerIds ? cfg.ownerIds.includes(STATE?.current?.id) : (STATE?.current?.id==='1399465075722551376'));
+  const allowed = isOwnerAllowed();
   if(btnTools){ if(allowed) btnTools.classList.remove('hidden'); else btnTools.classList.add('hidden'); }
   if(btnGive){ if(allowed) btnGive.classList.remove('hidden'); else btnGive.classList.add('hidden'); }
   if(btnRev){
@@ -1060,7 +1070,7 @@ function setupOwnerUI(){ try{
     setLabel();
     if(!btnRev.__bound){
       btnRev.addEventListener('click',()=>{
-        if(!allowed){ alertShow('Pouze owner.'); return; }
+        if(!isOwnerAllowed()){ alertShow('Pouze owner.'); return; }
         if(window.__reviveTimer){ stopReviveHeartbeat(); }
         else { startReviveHeartbeat(); }
         setLabel();
@@ -1071,26 +1081,43 @@ function setupOwnerUI(){ try{
   // Wire owner tools modal
   const OW={wrap:qs('#owner-modal'), close:qs('#owner-close'), open:btnTools, ch:qs('#owner-channel'), type:qs('#owner-type'), head:qs('#owner-head'), body:qs('#owner-body'), icon:qs('#owner-footericon'), send:qs('#owner-send')};
   const show=(v)=>{ if(!OW.wrap) return; if(v) OW.wrap.classList.remove('hidden'); else OW.wrap.classList.add('hidden'); };
-  OW.open?.addEventListener('click',()=>{ if(!allowed){ alertShow('Pouze owner.'); return; } show(true); });
-  OW.close?.addEventListener('click',()=> show(false));
-  qs('#owner-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
-  OW.send?.addEventListener('click', async ()=>{
-    if(!allowed){ alertShow('Pouze owner.'); return; }
-    const channelId=(OW.ch?.value||'').trim(); const type=(OW.type?.value||'normal');
-    const head=(OW.head?.value||'').trim(); const text=(OW.body?.value||'').trim(); const footerIcon=(OW.icon?.value||'').trim();
-    const durationMin = Number(qs('#owner-gw-duration')?.value||60);
-    const winners = Number(qs('#owner-gw-winners')?.value||1);
-    if(!channelId || !head || !text){ alertShow('Vyplň kanál, nadpis a text.'); return; }
-    try{
-      if(type==='giveaway'){
-        await dataPost('/giveaway/create',{ channelId, head, body:text, footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
-      } else {
-        await dataPost('/owner/announce',{ channelId, type, head, body:text, footerIcon, by: STATE.current?.name||'Owner' });
-      }
-      alertShow('Odesláno.'); show(false);
-      if(OW.head) OW.head.value=''; if(OW.body) OW.body.value='';
-    }catch{ alertShow('Odeslání selhalo. Zkontroluj BOT_TOKEN na serveru.'); }
-  });
+  if(!OW.wrap) return;
+  if(!OW.__bound){
+    OW.open?.addEventListener('click',()=>{ if(!isOwnerAllowed()){ alertShow('Pouze owner.'); return; } show(true); });
+    OW.close?.addEventListener('click',()=> show(false));
+    qs('#owner-modal .modal-backdrop')?.addEventListener('click',()=> show(false));
+    OW.send?.addEventListener('click', async ()=>{
+      if(!isOwnerAllowed()){ alertShow('Pouze owner.'); return; }
+      const channelId=(OW.ch?.value||'').trim(); const type=(OW.type?.value||'normal');
+      const head=(OW.head?.value||'').trim(); const text=(OW.body?.value||'').trim(); const footerIcon=(OW.icon?.value||'').trim();
+      const durationMin = Number(qs('#owner-gw-duration')?.value||60);
+      const winners = Number(qs('#owner-gw-winners')?.value||1);
+      if(!channelId || !head || !text){ alertShow('Vyplň kanál, nadpis a text.'); return; }
+      try{
+        if(type==='giveaway'){
+          await dataPost('/giveaway/create',{ channelId, head, body:text, footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
+        } else {
+          await dataPost('/owner/announce',{ channelId, type, head, body:text, footerIcon, by: STATE.current?.name||'Owner' });
+        }
+        alertShow('Odesláno.'); show(false);
+        if(OW.head) OW.head.value=''; if(OW.body) OW.body.value='';
+      }catch{ alertShow('Odeslání selhalo. Zkontroluj BOT_TOKEN na serveru.'); }
+    });
+    // Show/hide giveaway extra fields by type
+    const durEl=qs('#owner-gw-duration');
+    const winEl=qs('#owner-gw-winners');
+    const toggleGwFields=()=>{
+      const isGw=(OW.type?.value||'normal')==='giveaway';
+      try{ durEl?.parentElement && (durEl.parentElement.style.display = isGw? '' : 'none'); }catch{}
+      try{ winEl?.parentElement && (winEl.parentElement.style.display = isGw? '' : 'none'); }catch{}
+    };
+    OW.type?.addEventListener('change', toggleGwFields);
+    toggleGwFields();
+    OW.__bound=true;
+  } else {
+    // ensure fields visibility reflects current selection when roles/UI refresh
+    const ev=new Event('change'); OW.type?.dispatchEvent(ev);
+  }
 }catch{} }
 
 // Admin Messager (Web DM) wiring - robust init
