@@ -110,10 +110,16 @@ body{margin:0;font-family:Outfit,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-
 .action-row{display:flex;gap:10px}
 
 .staff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px}
-.staff-card{position:relative;padding:12px;border:1px solid rgba(124,58,237,.25);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06));overflow:hidden}
-.staff-card img{width:72px;height:72px;border-radius:50%;box-shadow:0 8px 30px rgba(124,58,237,.35)}
+/* Pyramid */
+.staff-pyramid{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.pyr-row{display:flex;justify-content:center;gap:12px}
+.pyr-row.top{justify-content:center}
+.staff-card{position:relative;padding:12px;border:1px solid rgba(124,58,237,.25);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(124,58,237,.06));overflow:hidden;min-width:180px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.staff-card img{width:72px;height:72px;border-radius:50%;box-shadow:0 8px 30px rgba(124,58,237,.35);object-fit:cover}
 .staff-name{font-weight:700;margin-top:6px}
 .staff-role{color:var(--muted);font-size:.9rem}
+@media (max-width:720px){ .pyr-row{flex-wrap:wrap} .staff-card{min-width:140px} }
+@media (max-width:520px){ .pyr-row{gap:8px} .staff-card{min-width:130px} }
 
 .footer{border-top:1px solid rgba(124,58,237,.15);padding:22px 0;background:linear-gradient(180deg,transparent,rgba(124,58,237,.05))}
 .footer-inner{display:flex;justify-content:space-between;align-items:center}
