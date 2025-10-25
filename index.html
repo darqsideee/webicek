@@ -193,30 +193,13 @@
     <section id="gallery" class="container section">
       <h2 class="section-title">Galerie</h2>
       <div id="gallery-guard" class="muted">Přihlaste se pomocí Discordu na hlavní stránce, abyste mohli přidávat fotografie.</div>
-      <div id="gallery-form" class="panel hidden">
-        <div class="panel-title">Nová fotografie</div>
-        <div class="admin-actions">
-          <input id="gal-image" type="text" placeholder="URL obrázku" />
-          <div class="muted">nebo nahrajte obrázek</div>
-          <input id="gal-file" type="file" accept="image/*" />
-          <input id="gal-caption" type="text" placeholder="Popis" />
-          <button class="btn btn-primary" id="gal-post">Přidat</button>
-        </div>
-      </div>
+      <div class="panel" id="gallery-form" class="hidden"><div class="panel-actions"><button class="btn btn-primary" id="gal-upload-open">Nahrát fotku</button></div></div>
       <div id="gallery-list" class="gallery-grid"></div>
     </section>
 
     <section id="news" class="container section">
       <h2 class="section-title">Novinky</h2>
-      <div id="news-admin" class="panel hidden">
-        <div class="panel-title">Vytvořit novinku (Tým)</div>
-        <div class="admin-actions">
-          <input id="news-image" type="text" placeholder="URL obrázku (volitelné)" />
-          <input id="news-head" type="text" placeholder="Nadpis" />
-          <textarea id="news-body" rows="6" placeholder="Text. Použijte **tučné** a #Nadpis"></textarea>
-          <button class="btn btn-primary" id="news-post">Publikovat</button>
-        </div>
-      </div>
+      <div id="news-admin" class="panel hidden"><div class="panel-actions"><button class="btn btn-primary" id="news-open">Vytvořit novinku</button></div></div>
       <div id="news-list" class="news-list"></div>
       <div id="news-pager" class="pager"></div>
     </section>
@@ -292,6 +275,7 @@
       <div class="modal-backdrop"></div>
       <div class="modal-card">
         <div class="modal-title">Vytvořit tiket</div>
+        <button class="btn btn-ghost" id="ticket-close" style="position:absolute;top:10px;right:10px">✕</button>
         <div class="ticket-form">
           <div class="grid">
             <div class="grid-col">
@@ -309,6 +293,38 @@
             <div class="grid-col"><label for="ticket-image">Obrázek (volitelné)</label><input id="ticket-image" type="file" accept="image/*" /></div>
           </div>
           <div class="form-actions"><button class="btn" id="ticket-create">Vytvořit</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery Upload Modal -->
+    <div id="gal-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card">
+        <div class="modal-title">Nahrát fotku</div>
+        <button class="btn btn-ghost" id="gal-close" style="position:absolute;top:10px;right:10px">✕</button>
+        <div class="admin-actions">
+          <div class="muted">Vyberte obrázek nebo vložte URL</div>
+          <input id="gm-file" type="file" accept="image/*" />
+          <input id="gm-image" type="text" placeholder="URL obrázku" />
+          <input id="gm-caption" type="text" placeholder="Popis" />
+          <button class="btn btn-primary" id="gm-add">Přidat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- News Create Modal -->
+    <div id="news-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card">
+        <div class="modal-title">Vytvořit novinku</div>
+        <button class="btn btn-ghost" id="news-close" style="position:absolute;top:10px;right:10px">✕</button>
+        <div class="admin-actions">
+          <input id="nm-file" type="file" accept="image/*" />
+          <input id="nm-image" type="text" placeholder="URL obrázku (volitelné)" />
+          <input id="nm-head" type="text" placeholder="Nadpis" />
+          <textarea id="nm-body" rows="6" placeholder="Text. Použijte **tučné** a #Nadpis"></textarea>
+          <button class="btn btn-primary" id="nm-add">Publikovat</button>
         </div>
       </div>
     </div>
