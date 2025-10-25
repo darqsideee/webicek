@@ -82,8 +82,8 @@ const T={
   openBtn:qs('#btn-open-ticket'),
   history:qs('#ticket-history'),
   modal:qs('#ticket-modal'),
-  mType:qs('#tm-type'), mReason:qs('#tm-reason'), mImage:qs('#tm-image'),
-  mCreate:qs('#tm-create'), mCancel:qs('#tm-cancel')
+  mType:qs('#ticket-type'), mReason:qs('#ticket-reason'), mImage:qs('#ticket-image'),
+  mCreate:qs('#ticket-create')
 };
 // Admin selectors
 const A={
@@ -153,7 +153,7 @@ function startAdminTimer(){
 function showTicketModal(v){
   if(!T.modal) return;
   if(v){ T.modal.classList.remove('hidden'); }
-  else { T.modal.classList.add('hidden'); T.mReason.value=''; T.mImage.value=''; T.mType.value='Bugs'; }
+  else { T.modal.classList.add('hidden'); if(T.mReason) T.mReason.value=''; if(T.mImage) T.mImage.value=''; if(T.mType) T.mType.value='support'; }
 }
 
 function ticketItemEl(t,opts={}){
@@ -258,7 +258,20 @@ async function renderGallery(){
     img.style.cursor='zoom-in';
     img.addEventListener('click',()=>openLightbox(it.image,it.caption||'', it.user));
     const cap=document.createElement('div');cap.className='card-text';cap.textContent=it.caption||'';
-    const meta=document.createElement('div');meta.className='muted';meta.style.marginTop='6px';meta.textContent=`by ${it.user}`;
+    const meta=document.createElement('div');meta.className='muted';meta.style.marginTop='6px';
+    const pub=document.createElement('div'); pub.className='promoted-pub';
+    const ava=document.createElement('img'); ava.src=it.uploaderAvatar||`https://cdn.discordapp.com/embed/avatars/0.png`; ava.alt='';
+    const name=document.createElement('span'); name.textContent=it.user;
+    pub.appendChild(ava); pub.appendChild(name);
+    meta.appendChild(pub);
+    // like button
+    const likeBtn=document.createElement('button'); likeBtn.className='btn btn-outline'; likeBtn.textContent=`Líbí se (${(it.likes?.length)||0})`;
+    likeBtn.style.marginLeft='8px';
+    likeBtn.addEventListener('click', async ()=>{
+      try{ await dataPost('/gallery/like',{ id:it.id, userId: STATE.current?.id||'guest' }); }catch{}
+      renderGallery();
+    });
+    meta.appendChild(likeBtn);
     if(!it.approved){
       const badge=document.createElement('div'); badge.className='pending-badge'; badge.textContent='Čeká na schválení týmem'; card.appendChild(badge);
     }
@@ -275,14 +288,14 @@ async function renderGallery(){
   });
 }
 async function addGallery(image,caption,user){
-  const payload={image,caption,user};
+  const payload={image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar:HP.pillImg?.src||''};
   try{
     await dataPost('/gallery',payload);
   }catch{
     const items=store.get('ns_gallery',[]);
     const id=`g_${Date.now()}`;
     const uploaderAvatar = HP.pillImg?.src||'';
-    items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar,approved:true,promoted:false,ts:Date.now()});
+    items.push({id,image,caption,user,uploaderId:STATE.current?.id||null,uploaderAvatar,approved:false,promoted:false,likes:[],ts:Date.now()});
     store.set('ns_gallery',items);
   }
   renderGallery();
@@ -292,25 +305,28 @@ function deleteGallery(id){ const items=store.get('ns_gallery',[]).filter(x=>x.i
 function approveGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.approved=true;} store.set('ns_gallery',items); renderGallery(); renderAdminGalleryPending(); }
 function togglePromoteGallery(id){ const items=store.get('ns_gallery',[]); const it=items.find(x=>x.id===id); if(it){it.promoted=!it.promoted;} store.set('ns_gallery',items); renderGallery(); renderHomePromoted(); }
 
-function renderAdminGalleryPending(){
+async function renderAdminGalleryPending(){
   if(!A.galList) return;
-  const items=store.get('ns_gallery',[]).filter(x=>!x.approved).sort((a,b)=>b.ts-a.ts);
+  let items=[]; try{ items=(await dataGet('/gallery'))||[] }catch{ items=store.get('ns_gallery',[]) }
+  items=items.filter(x=>!x.approved).sort((a,b)=>b.ts-a.ts);
   if(items.length===0){ A.galList.textContent='No pending images.'; return; }
   A.galList.textContent='';
   items.forEach(it=>{
     const row=document.createElement('div'); row.className='guild';
     const img=document.createElement('img'); img.src=it.image; img.alt=''; img.style.width='46px'; img.style.height='46px'; img.style.borderRadius='8px';
     const meta=document.createElement('div'); meta.innerHTML=`<div class="g-name">${it.caption||'Untitled'}</div><div class="g-id">by ${it.user}</div>`;
-    const allow=document.createElement('button'); allow.className='btn btn-primary'; allow.textContent='Allow'; allow.addEventListener('click',()=>approveGallery(it.id));
-    const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Delete'; del.style.marginLeft='8px'; del.addEventListener('click',()=>{ deleteGallery(it.id); renderAdminGalleryPending(); });
+    const allow=document.createElement('button'); allow.className='btn btn-primary'; allow.textContent='Povolit'; allow.addEventListener('click',async ()=>{ try{ await dataPost('/gallery/approve',{id:it.id}); }catch{ approveGallery(it.id); } renderGallery(); renderAdminGalleryPending(); addGalLog('approve',it); });
+    const del=document.createElement('button'); del.className='btn btn-outline'; del.textContent='Smazat'; del.style.marginLeft='8px'; del.addEventListener('click',async ()=>{ try{ await dataPost('/gallery/delete',{id:it.id}); }catch{ deleteGallery(it.id); } renderAdminGalleryPending(); addGalLog('delete',it); });
     row.appendChild(img); row.appendChild(meta); row.appendChild(allow); row.appendChild(del);
     A.galList.appendChild(row);
   });
 }
 
-function renderHomePromoted(){
+async function renderHomePromoted(){
   if(!S.homePromoted) return;
-  const items=store.get('ns_gallery',[]).filter(x=>x.approved && x.promoted).sort((a,b)=>b.ts-a.ts).slice(0,3);
+  let items=store.get('ns_gallery',[]);
+  try{ items=await dataGet('/gallery'); }catch{}
+  items=items.filter(x=>x.approved && x.promoted).sort((a,b)=>b.ts-a.ts).slice(0,3);
   S.homePromoted.textContent='';
   items.forEach(it=>{
     const card=document.createElement('div'); card.className='promoted-card';
@@ -323,6 +339,21 @@ function renderHomePromoted(){
     S.homePromoted.appendChild(card);
   });
 }
+
+// Gallery logs (admin)
+async function renderGalleryLogs(){
+  if(!A.logsList) return;
+  let logs=[]; try{ logs=await dataGet('/gallery/logs'); }catch{ logs=store.get('ns_gal_logs',[]) }
+  if(!logs.length){ A.logsList.textContent='Žádné logy.'; return; }
+  A.logsList.textContent='';
+  logs.slice().reverse().forEach(l=>{
+    const row=document.createElement('div'); row.className='guild'; row.style.cursor='pointer';
+    row.innerHTML=`<div class="g-name">${l.action==='approve'?'Povoleno':'Smazáno'} • ${new Date(l.ts).toLocaleString()}</div><div class="g-id">${l.caption||''} • ${l.user||''}</div>`;
+    row.addEventListener('click',()=>{ if(l.image) openLightbox(l.image,l.caption||'',l.user||''); });
+    A.logsList.appendChild(row);
+  });
+}
+function addGalLog(action,it){ const logs=store.get('ns_gal_logs',[]); logs.push({action, image:it.image, caption:it.caption, user:it.user, ts:Date.now()}); store.set('ns_gal_logs',logs); renderGalleryLogs(); }
 
 function parseNewsBody(src){
   const lines=src.split(/\r?\n/);
@@ -608,24 +639,25 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
   enableIfReason(A.dReason,[A.dKick,A.dBan]);
   enableIfReason(A.fReason,[A.fKick,A.fBan,A.fAnn]);
   // Wire post actions
-  S.galPost?.addEventListener('click',()=>{
-    const image=S.galImage.value.trim(); const caption=S.galCaption.value.trim();
-    if(!image) return;
-    addGallery(image,caption,HP.pillName?.textContent||'User');
-    S.galImage.value=''; S.galCaption.value='';
-  });
-  S.galFile?.addEventListener('change',(e)=>{
-    const f=e.target.files?.[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=()=>{ S.galImage.value=reader.result; };
-    reader.readAsDataURL(f);
-  });
-  S.newsPost?.addEventListener('click',()=>{
-    const image=S.newsImage.value.trim(); const head=S.newsHead.value.trim(); const body=S.newsBody.value.trim();
-    if(!head||!body) return;
-    addNews(image,head,body,HP.pillName?.textContent||'Staff');
-    S.newsImage.value=''; S.newsHead.value=''; S.newsBody.value='';
-  });
+  // Ticket modal close
+  qs('#ticket-close')?.addEventListener('click',()=>showTicketModal(false));
+  qs('#ticket-modal .modal-backdrop')?.addEventListener('click',()=>showTicketModal(false));
+  
+  // Gallery upload modal wiring
+  const gm={wrap:qs('#gal-modal'), open:qs('#gal-upload-open'), close:qs('#gal-close'), file:qs('#gm-file'), url:qs('#gm-image'), cap:qs('#gm-caption'), add:qs('#gm-add')};
+  gm.open?.addEventListener('click',()=> gm.wrap?.classList.remove('hidden'));
+  gm.close?.addEventListener('click',()=> gm.wrap?.classList.add('hidden'));
+  qs('#gal-modal .modal-backdrop')?.addEventListener('click',()=> gm.wrap?.classList.add('hidden'));
+  gm.file?.addEventListener('change',(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ gm.url.value=r.result; }; r.readAsDataURL(f); });
+  gm.add?.addEventListener('click',()=>{ const image=(gm.url?.value||'').trim(); const caption=(gm.cap?.value||'').trim(); if(!image) return; addGallery(image,caption,HP.pillName?.textContent||'User'); gm.url.value=''; gm.cap.value=''; gm.wrap?.classList.add('hidden'); });
+
+  // News create modal wiring
+  const nm={wrap:qs('#news-modal'), open:qs('#news-open'), close:qs('#news-close'), file:qs('#nm-file'), img:qs('#nm-image'), head:qs('#nm-head'), body:qs('#nm-body'), add:qs('#nm-add')};
+  nm.open?.addEventListener('click',()=> nm.wrap?.classList.remove('hidden'));
+  nm.close?.addEventListener('click',()=> nm.wrap?.classList.add('hidden'));
+  qs('#news-modal .modal-backdrop')?.addEventListener('click',()=> nm.wrap?.classList.add('hidden'));
+  nm.file?.addEventListener('change',(e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ nm.img.value=r.result; }; r.readAsDataURL(f); });
+  nm.add?.addEventListener('click',()=>{ const image=(nm.img?.value||'').trim(); const head=(nm.head?.value||'').trim(); const body=(nm.body?.value||'').trim(); if(!head||!body) return; addNews(image,head,body,HP.pillName?.textContent||'Staff'); nm.img.value=''; nm.head.value=''; nm.body.value=''; nm.wrap?.classList.add('hidden'); });
 }
 
 document.addEventListener('DOMContentLoaded',()=>{onReady();setLoginLinks();startParticles()});
