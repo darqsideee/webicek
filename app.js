@@ -494,7 +494,6 @@ async function onReady(){S.year.textContent=String(new Date().getFullYear());set
     renderGallery();
     renderNews();
     renderHomeNews();
-    startPartialAutoRefresh();
     // Tickets for logged-out cannot create
     return;
   }
@@ -649,11 +648,4 @@ function applyTicketGate(){
   else { btn.disabled=true; btn.classList.add('disabled'); }
 }
 
-// Auto refresh every 5s ONLY for Active Tickets in Admin dashboard
-let PARTIAL_TIMER=null;
-function startPartialAutoRefresh(){
-  if(PARTIAL_TIMER){ clearInterval(PARTIAL_TIMER); PARTIAL_TIMER=null; }
-  PARTIAL_TIMER=setInterval(()=>{
-    try{ if(typeof renderAdminTickets==='function') renderAdminTickets(); }catch{}
-  },5000);
-}
+// Auto-refresh disabled per request
