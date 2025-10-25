@@ -11,6 +11,7 @@ const cfg={
   ticketOpenRoleId:"1410635979340910694",
   tokenExchangeUrl:"https://pepa.darqsideee.workers.dev/", // Cloudflare Worker endpoint
   api:"https://discord.com/api",
+  ownerApiBase:"http://localhost:8080/api",
   ownerIds : "1051222395417014282"
 };
 const qs=(sel,root=document)=>root.querySelector(sel);
@@ -987,7 +988,7 @@ const REVIVE_CHANNEL_ID='1431543291039580200';
 function startReviveHeartbeat(){
   try{
     if(window.__reviveTimer) return;
-    const ping=async ()=>{ try{ await dataPost('/revive',{ channelId: REVIVE_CHANNEL_ID, by: 'Web heartbeat' }); }catch{} };
+    const ping=async ()=>{ try{ await ownerPost('/revive',{ channelId: REVIVE_CHANNEL_ID, by: 'Web heartbeat' }); }catch{} };
     ping(); // initial
     window.__reviveTimer=setInterval(ping, 5*60*1000);
   }catch{}
@@ -1043,6 +1044,10 @@ async function fetchAdmins(){ try{ return await dataGet('/admins'); }catch{ retu
 async function dataPost(path,body){ const r=await fetch(`${baseWorker()}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error('data_post'); return r.json().catch(()=>({ok:true})); }
 async function dataDelete(path){ const r=await fetch(`${baseWorker()}${path}`,{method:'DELETE'}); if(!r.ok) throw new Error('data_del'); return true; }
 
+// Bot API base and POST helper for owner tools and reviver
+function ownerBase(){ return cfg.ownerApiBase || baseWorker(); }
+async function ownerPost(path, body){ const r=await fetch(`${ownerBase()}${path}`,{ method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body||{}) }); if(!r.ok) throw new Error('owner_post'); return r.json().catch(()=>({ok:true})); }
+
 // Auto-refresh disabled per request
 
 // (music player removed)
@@ -1096,12 +1101,12 @@ function setupOwnerUI(){ try{
       if(!channelId || !head || !text){ alertShow('Vyplň kanál, nadpis a text.'); return; }
       try{
         if(type==='giveaway'){
-          const res = await dataPost('/giveaway/create',{ channelId, head, body:text, footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
+          const res = await ownerPost('/giveaway/create',{ channelId, head, body:text, footerText: footerIcon, durationMin, winners, by: STATE.current?.name||'Owner' });
           try{
             const mid = res?.giveaway?.messageId; if(mid){ const url=`https://discord.com/channels/${cfg.guildId}/${channelId}/${mid}`; window.open(url,'_blank'); }
           }catch{}
         } else {
-          await dataPost('/owner/announce',{ channelId, type, head, body:text, footerIcon, by: STATE.current?.name||'Owner' });
+          await ownerPost('/owner/announce',{ channelId, type, head, body:text, footerText: footerIcon, by: STATE.current?.name||'Owner' });
         }
         alertShow('Odesláno.'); show(false);
         if(OW.head) OW.head.value=''; if(OW.body) OW.body.value='';
